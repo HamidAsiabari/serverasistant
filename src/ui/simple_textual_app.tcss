@@ -1,0 +1,190 @@
+/* Simple Server Assistant Textual App Styles */
+
+/* Global styles */
+Screen {
+    background: $surface;
+}
+
+/* Header and Footer */
+Header {
+    background: $primary;
+    color: $text;
+    text-align: center;
+    padding: 1;
+    border-bottom: solid $primary-lighten-2;
+}
+
+Footer {
+    background: $primary;
+    color: $text;
+    text-align: center;
+    padding: 1;
+    border-top: solid $primary-lighten-2;
+}
+
+/* Tabbed Content */
+TabbedContent {
+    height: 1fr;
+}
+
+TabPane {
+    padding: 1;
+}
+
+/* Dashboard Styles */
+.dashboard {
+    height: 1fr;
+    padding: 1;
+}
+
+.dashboard-title {
+    content-align: center middle;
+    text-style: bold;
+    color: $primary;
+    font-size: 1.2em;
+    margin-bottom: 1;
+}
+
+.services-container {
+    height: 1fr;
+    layout: grid;
+    grid-size: 2;
+    grid-gutter: 1;
+}
+
+/* Service Card Styles */
+.service-card {
+    background: $surface-lighten-1;
+    border: solid $primary-lighten-2;
+    border-radius: 5;
+    padding: 1;
+    margin: 1;
+    min-height: 12;
+}
+
+.service-title {
+    content-align: center middle;
+    text-style: bold;
+    color: $primary;
+    font-size: 1.1em;
+    margin-bottom: 1;
+}
+
+.service-status {
+    margin: 1 0;
+    padding: 0.5;
+    background: $surface-lighten-2;
+    border-radius: 3;
+    text-align: center;
+}
+
+.service-controls {
+    height: auto;
+    margin: 1 0;
+    layout: horizontal;
+}
+
+/* Services Screen Styles */
+.services-screen {
+    height: 1fr;
+    padding: 1;
+}
+
+.screen-title {
+    content-align: center middle;
+    text-style: bold;
+    color: $primary;
+    font-size: 1.2em;
+    margin-bottom: 1;
+}
+
+.services-header {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.services-table {
+    height: 1fr;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+}
+
+/* Logs Screen Styles */
+.logs-screen {
+    height: 1fr;
+    padding: 1;
+}
+
+.logs-header {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.main-log-viewer {
+    height: 1fr;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    background: $surface-darken-1;
+    color: $text;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.9em;
+}
+
+/* Settings Screen Styles */
+.settings-screen {
+    height: 1fr;
+    padding: 1;
+}
+
+/* Button Styles */
+Button {
+    border: solid $primary;
+    border-radius: 3;
+    padding: 0 1;
+    margin: 0 0.5;
+}
+
+Button:hover {
+    background: $primary-lighten-1;
+}
+
+Button:focus {
+    border: solid $accent;
+}
+
+/* DataTable Styles */
+DataTable {
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+}
+
+/* Select Styles */
+Select {
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    padding: 0 1;
+}
+
+Select:focus {
+    border: solid $accent;
+}
+
+/* Responsive Design */
+@media (max-width: 80) {
+    .services-container {
+        grid-size: 1;
+    }
+}
+
+/* Animation Effects */
+.service-card {
+    transition: all 0.2s ease;
+}
+
+.service-card:hover {
+    background: $surface-lighten-2;
+    border-color: $primary;
+    transform: translateY(-1);
+} 

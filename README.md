@@ -37,6 +37,34 @@ cd serverasistant
 .\start.bat
 ```
 
+### 🎨 Beautiful GUI Interface
+
+ServerAssistant now includes a beautiful terminal-based GUI built with [Textual](https://textual.textualize.io/)!
+
+#### Launch the GUI
+
+```bash
+# Install textual (if not already installed)
+pip install textual>=0.52.0
+
+# Launch GUI
+python gui_main.py
+
+# Or use the convenience scripts
+./scripts/startup/launch_gui.sh    # Linux/macOS
+scripts\startup\launch_gui.bat     # Windows
+```
+
+#### GUI Features
+- 📊 **Dashboard**: Visual overview of all services with status indicators
+- 🔧 **Service Management**: One-click start, stop, restart services
+- 📋 **Logs Viewer**: Real-time log viewing with syntax highlighting
+- ⚙️ **Settings**: Configuration overview and Docker environment status
+- ⌨️ **Keyboard Shortcuts**: Quick navigation (1-4 for tabs, r for refresh, q to quit)
+- 📱 **Responsive Design**: Adapts to different terminal sizes
+
+For detailed GUI documentation, see [GUI README](docs/GUI_README.md).
+
 ### Alternative Startup Methods
 
 #### Direct Python Launch
@@ -70,11 +98,13 @@ For comprehensive documentation, guides, and tutorials, please visit our **[Docu
 - **[Setup Guides](docs/setup/)** - Installation and configuration guides  
 - **[Development Docs](docs/development/)** - Development setup and guidelines
 - **[Deployment Guides](docs/deployment/)** - Production deployment guides
+- **[GUI Documentation](docs/GUI_README.md)** - Beautiful terminal GUI guide
 
 ### Quick Documentation Links
 - **[Usage Guide](docs/guides/usage-guide.md)** - How to use ServerAssistant effectively
 - **[Startup Guide](docs/setup/startup-guide.md)** - Complete startup and initialization
 - **[Development Guide](docs/development/development-guide.md)** - Development setup and guidelines
+- **[GUI Guide](docs/GUI_README.md)** - Beautiful terminal interface guide
 
 ## 🎯 Key Features
 
@@ -87,6 +117,7 @@ For comprehensive documentation, guides, and tutorials, please visit our **[Docu
 - **Cross-Platform Support**: Works on Linux Ubuntu and Windows servers
 - **Logging**: Comprehensive logging with configurable log levels
 - **CLI Interface**: Easy-to-use command-line interface
+- **🎨 Beautiful GUI**: Modern terminal-based interface with Textual
 - **Status Monitoring**: Real-time service status and resource usage
 - **Notifications**: Email and webhook notifications for service issues
 - **Automated Reports**: Daily status reports and log cleanup

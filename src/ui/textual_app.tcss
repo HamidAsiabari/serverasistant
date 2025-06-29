@@ -1,0 +1,395 @@
+/* Server Assistant Textual App Styles */
+
+/* Global styles */
+Screen {
+    background: $surface;
+}
+
+/* Header and Footer */
+Header {
+    background: $primary;
+    color: $text;
+    text-align: center;
+    padding: 1;
+    border-bottom: solid $primary-lighten-2;
+}
+
+Footer {
+    background: $primary;
+    color: $text;
+    text-align: center;
+    padding: 1;
+    border-top: solid $primary-lighten-2;
+}
+
+/* Tabbed Content */
+TabbedContent {
+    height: 1fr;
+}
+
+TabPane {
+    padding: 1;
+}
+
+/* Dashboard Styles */
+.dashboard {
+    height: 1fr;
+    padding: 1;
+}
+
+.dashboard-header {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.dashboard-title {
+    content-align: center middle;
+    text-style: bold;
+    color: $primary;
+    font-size: 1.2em;
+}
+
+.stats-container {
+    height: auto;
+    margin-bottom: 2;
+    layout: horizontal;
+}
+
+.stat-card {
+    background: $surface-lighten-1;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    padding: 1 2;
+    margin: 0 1;
+    content-align: center middle;
+    text-align: center;
+    min-width: 15;
+}
+
+.services-grid {
+    height: 1fr;
+    layout: grid;
+    grid-size: 3;
+    grid-gutter: 1;
+}
+
+/* Service Card Styles */
+.service-card {
+    background: $surface-lighten-1;
+    border: solid $primary-lighten-2;
+    border-radius: 5;
+    padding: 1;
+    margin: 1;
+    min-height: 15;
+}
+
+.service-header {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.service-title {
+    content-align: left middle;
+    text-style: bold;
+    color: $primary;
+    font-size: 1.1em;
+}
+
+.service-toggle {
+    margin-left: auto;
+}
+
+.service-status {
+    margin: 1 0;
+    padding: 0.5;
+    background: $surface-lighten-2;
+    border-radius: 3;
+}
+
+.service-detail {
+    margin: 0.5 0;
+    color: $text-muted;
+    font-size: 0.9em;
+}
+
+.service-controls {
+    height: auto;
+    margin: 1 0;
+    layout: horizontal;
+}
+
+.control-btn {
+    margin: 0 0.5;
+    min-width: 8;
+}
+
+/* Services Screen Styles */
+.services-screen {
+    height: 1fr;
+    padding: 1;
+}
+
+.services-header {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.screen-title {
+    content-align: left middle;
+    text-style: bold;
+    color: $primary;
+    font-size: 1.2em;
+}
+
+.services-table {
+    height: 1fr;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+}
+
+.service-details-panel {
+    height: 20;
+    margin-top: 1;
+    background: $surface-lighten-1;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    padding: 1;
+}
+
+.placeholder-text {
+    content-align: center middle;
+    color: $text-muted;
+    text-style: italic;
+}
+
+/* Logs Screen Styles */
+.logs-screen {
+    height: 1fr;
+    padding: 1;
+}
+
+.logs-header {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.main-log-viewer {
+    height: 1fr;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    background: $surface-darken-1;
+    color: $text;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.9em;
+}
+
+.log-container {
+    height: 1fr;
+}
+
+.log-header {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.log-title {
+    content-align: left middle;
+    text-style: bold;
+    color: $primary;
+}
+
+.log-viewer {
+    height: 1fr;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    background: $surface-darken-1;
+    color: $text;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.9em;
+}
+
+/* Settings Screen Styles */
+.settings-screen {
+    height: 1fr;
+    padding: 1;
+}
+
+.settings-form {
+    height: 1fr;
+    padding: 1;
+    background: $surface-lighten-1;
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+}
+
+.section-title {
+    margin: 1 0 0.5 0;
+    text-style: bold;
+    color: $primary;
+    border-bottom: solid $primary-lighten-2;
+    padding-bottom: 0.5;
+}
+
+/* Button Styles */
+Button {
+    border: solid $primary;
+    border-radius: 3;
+    padding: 0 1;
+    margin: 0 0.5;
+}
+
+Button:hover {
+    background: $primary-lighten-1;
+}
+
+Button:focus {
+    border: solid $accent;
+}
+
+/* DataTable Styles */
+DataTable {
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+}
+
+/* Switch Styles */
+Switch {
+    border: solid $primary;
+    border-radius: 3;
+}
+
+/* Input Styles */
+Input {
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    padding: 0 1;
+}
+
+Input:focus {
+    border: solid $accent;
+}
+
+/* Select Styles */
+Select {
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+    padding: 0 1;
+}
+
+Select:focus {
+    border: solid $accent;
+}
+
+/* Progress Bar Styles */
+ProgressBar {
+    border: solid $primary-lighten-2;
+    border-radius: 3;
+}
+
+/* Status Colors */
+.status-running {
+    color: $success;
+}
+
+.status-stopped {
+    color: $error;
+}
+
+.status-starting {
+    color: $warning;
+}
+
+.status-unknown {
+    color: $text-muted;
+}
+
+/* Responsive Design */
+@media (max-width: 80) {
+    .services-grid {
+        grid-size: 2;
+    }
+    
+    .stats-container {
+        layout: vertical;
+    }
+    
+    .stat-card {
+        margin: 0.5 0;
+    }
+}
+
+@media (max-width: 60) {
+    .services-grid {
+        grid-size: 1;
+    }
+    
+    .service-controls {
+        layout: vertical;
+    }
+    
+    .control-btn {
+        margin: 0.5 0;
+    }
+}
+
+/* Animation Effects */
+.service-card {
+    transition: all 0.2s ease;
+}
+
+.service-card:hover {
+    background: $surface-lighten-2;
+    border-color: $primary;
+    transform: translateY(-1);
+}
+
+.control-btn {
+    transition: all 0.1s ease;
+}
+
+.control-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Custom Scrollbar */
+Scrollbar {
+    background: $surface-lighten-1;
+    border-radius: 3;
+}
+
+Scrollbar:hover {
+    background: $surface-lighten-2;
+}
+
+/* Notification Styles */
+Notification {
+    border: solid $primary;
+    border-radius: 3;
+    background: $surface;
+    color: $text;
+}
+
+Notification.error {
+    border-color: $error;
+    background: $error-darken-1;
+}
+
+Notification.warning {
+    border-color: $warning;
+    background: $warning-darken-1;
+}
+
+Notification.information {
+    border-color: $info;
+    background: $info-darken-1;
+}
+
+Notification.success {
+    border-color: $success;
+    background: $success-darken-1;
+} 
