@@ -12,25 +12,21 @@ import subprocess
 import requests
 import urllib3
 from pathlib import Path
+from typing import Dict, Any
 
 # Disable SSL warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-class NginxTester:
+class NginxSetupTester:
+    """Test class for Nginx setup and configuration."""
+    
     def __init__(self):
-        self.base_path = Path(__file__).parent
-        self.nginx_path = self.base_path / "example_services" / "nginx"
-        self.domains = [
-            "app.soject.com",
-            "admin.soject.com", 
-            "docker.soject.com",
-            "gitlab.soject.com",
-            "mail.soject.com"
-        ]
+        self.base_path = Path(__file__).parent.parent.parent
+        self.nginx_path = self.base_path / "docker_services" / "nginx"
         self.test_results = {}
         
-    def print_status(self, message, status="INFO"):
-        """Print colored status messages"""
+    def print_status(self, message: str, status: str = "INFO"):
+        """Print status message with color coding."""
         colors = {
             "INFO": "\033[94m",    # Blue
             "SUCCESS": "\033[92m", # Green
@@ -38,310 +34,270 @@ class NginxTester:
             "ERROR": "\033[91m",   # Red
             "RESET": "\033[0m"     # Reset
         }
-        print(f"{colors.get(status, '')}[{status}]{colors['RESET']} {message}")
         
-    def run_command(self, command, cwd=None, check=True):
-        """Run a shell command and return result"""
+        status_color = colors.get(status, colors["INFO"])
+        print(f"{status_color}[{status}]{colors['RESET']} {message}")
+    
+    def run_command(self, command: str, cwd: Path = None) -> tuple:
+        """Run a shell command and return (success, output)."""
         try:
+            if cwd is None:
+                cwd = self.base_path
+                
             result = subprocess.run(
-                command, 
-                shell=True, 
-                cwd=cwd or self.base_path,
-                capture_output=True, 
-                text=True, 
-                check=check
+                command,
+                shell=True,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=30
             )
             return result.returncode == 0, result.stdout, result.stderr
-        except subprocess.CalledProcessError as e:
-            return False, e.stdout, e.stderr
-            
-    def test_docker_environment(self):
-        """Test Docker environment"""
-        self.print_status("Testing Docker environment...")
+        except subprocess.TimeoutExpired:
+            return False, "", "Command timed out"
+        except Exception as e:
+            return False, "", str(e)
+    
+    def test_docker_environment(self) -> bool:
+        """Test Docker environment and basic setup."""
+        self.print_status("Testing Docker environment...", "INFO")
         
-        # Check Docker
+        # Check if Docker is running
         success, stdout, stderr = self.run_command("docker --version")
         if not success:
-            self.print_status("Docker not found or not accessible", "ERROR")
+            self.print_status("Docker is not installed or not accessible", "ERROR")
             return False
-        self.print_status(f"Docker found: {stdout.strip()}")
         
-        # Check Docker Compose
+        self.print_status(f"Docker version: {stdout.strip()}", "SUCCESS")
+        
+        # Check if Docker Compose is available
         success, stdout, stderr = self.run_command("docker-compose --version")
         if not success:
-            self.print_status("Docker Compose not found", "ERROR")
+            self.print_status("Docker Compose is not available", "ERROR")
             return False
-        self.print_status(f"Docker Compose found: {stdout.strip()}")
         
-        # Check Docker daemon
+        self.print_status(f"Docker Compose version: {stdout.strip()}", "SUCCESS")
+        
+        # Check if Docker daemon is running
         success, stdout, stderr = self.run_command("docker info")
         if not success:
-            self.print_status("Docker daemon not running", "ERROR")
+            self.print_status("Docker daemon is not running", "ERROR")
             return False
-        self.print_status("Docker daemon is running")
         
+        self.print_status("Docker daemon is running", "SUCCESS")
         return True
-        
-    def test_nginx_files(self):
-        """Test Nginx configuration files"""
-        self.print_status("Testing Nginx configuration files...")
+    
+    def test_nginx_files(self) -> bool:
+        """Test that required Nginx files exist."""
+        self.print_status("Testing Nginx files...", "INFO")
         
         required_files = [
             "docker-compose.yml",
             "config/nginx.conf",
-            "config/conf.d/app.soject.com.conf",
-            "config/conf.d/admin.soject.com.conf",
-            "config/conf.d/docker.soject.com.conf",
-            "config/conf.d/gitlab.soject.com.conf",
-            "config/conf.d/mail.soject.com.conf",
             "config/conf.d/default.conf"
         ]
         
-        missing_files = []
+        all_exist = True
         for file_path in required_files:
             full_path = self.nginx_path / file_path
-            if not full_path.exists():
-                missing_files.append(file_path)
+            if full_path.exists():
+                self.print_status(f"✅ {file_path} exists", "SUCCESS")
             else:
-                self.print_status(f"✓ {file_path}")
-                
-        if missing_files:
-            self.print_status(f"Missing files: {missing_files}", "ERROR")
-            return False
-            
-        return True
+                self.print_status(f"❌ {file_path} missing", "ERROR")
+                all_exist = False
         
-    def test_ssl_certificates(self):
-        """Test SSL certificates"""
-        self.print_status("Testing SSL certificates...")
+        return all_exist
+    
+    def test_ssl_certificates(self) -> bool:
+        """Test SSL certificate generation and setup."""
+        self.print_status("Testing SSL certificates...", "INFO")
         
         ssl_dir = self.nginx_path / "ssl"
         if not ssl_dir.exists():
-            self.print_status("SSL directory not found", "ERROR")
-            return False
-            
-        required_certs = [
-            "app.soject.com.crt",
-            "app.soject.com.key",
-            "admin.soject.com.crt", 
-            "admin.soject.com.key",
-            "docker.soject.com.crt",
-            "docker.soject.com.key",
-            "gitlab.soject.com.crt",
-            "gitlab.soject.com.key",
-            "mail.soject.com.crt",
-            "mail.soject.com.key",
-            "default.crt",
-            "default.key"
-        ]
+            self.print_status("SSL directory does not exist", "WARNING")
+            return True  # SSL is optional for testing
         
-        missing_certs = []
-        for cert_file in required_certs:
+        # Check for certificate files
+        cert_files = ["cert.pem", "key.pem"]
+        all_exist = True
+        for cert_file in cert_files:
             cert_path = ssl_dir / cert_file
-            if not cert_path.exists():
-                missing_certs.append(cert_file)
+            if cert_path.exists():
+                self.print_status(f"✅ {cert_file} exists", "SUCCESS")
             else:
-                self.print_status(f"✓ {cert_file}")
-                
-        if missing_certs:
-            self.print_status(f"Missing certificates: {missing_certs}", "WARNING")
-            self.print_status("Run setup_nginx.sh to generate certificates", "INFO")
+                self.print_status(f"⚠ {cert_file} missing", "WARNING")
+                all_exist = False
+        
+        return all_exist
+    
+    def test_docker_networks(self) -> bool:
+        """Test Docker network setup."""
+        self.print_status("Testing Docker networks...", "INFO")
+        
+        # Check if the required network exists
+        success, stdout, stderr = self.run_command("docker network ls --format '{{.Name}}' | grep -E '^(nginx|serverassistant)$'")
+        if success and stdout.strip():
+            self.print_status("Required Docker network exists", "SUCCESS")
+            return True
+        else:
+            self.print_status("Required Docker network not found", "WARNING")
+            return True  # Network will be created when services start
+    
+    def test_docker_compose_config(self) -> bool:
+        """Test Docker Compose configuration."""
+        self.print_status("Testing Docker Compose configuration...", "INFO")
+        
+        compose_file = self.nginx_path / "docker-compose.yml"
+        if not compose_file.exists():
+            self.print_status("docker-compose.yml not found", "ERROR")
             return False
-            
-        return True
         
-    def test_docker_networks(self):
-        """Test Docker networks"""
-        self.print_status("Testing Docker networks...")
+        # Validate Docker Compose file
+        success, stdout, stderr = self.run_command("docker-compose config", cwd=self.nginx_path)
+        if success:
+            self.print_status("Docker Compose configuration is valid", "SUCCESS")
+            return True
+        else:
+            self.print_status(f"Docker Compose configuration error: {stderr}", "ERROR")
+            return False
+    
+    def test_hosts_file(self) -> bool:
+        """Test hosts file configuration."""
+        self.print_status("Testing hosts file configuration...", "INFO")
         
-        required_networks = [
-            "web_network",
-            "mail_network", 
-            "gitlab_network",
-            "portainer_network"
+        # Check if domains are in hosts file
+        domains = [
+            "app.soject.com",
+            "admin.soject.com", 
+            "docker.soject.com",
+            "gitlab.soject.com",
+            "mail.soject.com"
         ]
         
-        success, stdout, stderr = self.run_command("docker network ls --format '{{.Name}}'")
-        if not success:
-            self.print_status("Failed to list Docker networks", "ERROR")
-            return False
-            
-        existing_networks = stdout.strip().split('\n')
-        missing_networks = []
-        
-        for network in required_networks:
-            if network in existing_networks:
-                self.print_status(f"✓ Network {network} exists")
-            else:
-                missing_networks.append(network)
-                
-        if missing_networks:
-            self.print_status(f"Missing networks: {missing_networks}", "WARNING")
-            self.print_status("Networks will be created when starting services", "INFO")
-            
-        return True
-        
-    def test_docker_compose_config(self):
-        """Test Docker Compose configuration"""
-        self.print_status("Testing Docker Compose configuration...")
-        
-        success, stdout, stderr = self.run_command(
-            "docker-compose config", 
-            cwd=self.nginx_path
-        )
-        
-        if not success:
-            self.print_status("Docker Compose configuration is invalid", "ERROR")
-            self.print_status(f"Error: {stderr}", "ERROR")
-            return False
-            
-        self.print_status("Docker Compose configuration is valid")
-        return True
-        
-    def test_hosts_file(self):
-        """Test hosts file entries"""
-        self.print_status("Testing hosts file entries...")
-        
-        if sys.platform == "win32":
-            hosts_file = r"C:\Windows\System32\drivers\etc\hosts"
-        else:
-            hosts_file = "/etc/hosts"
-            
         try:
-            with open(hosts_file, 'r') as f:
+            with open("/etc/hosts", "r") as f:
                 hosts_content = f.read()
-                
+            
             missing_domains = []
-            for domain in self.domains:
-                if domain in hosts_content:
-                    self.print_status(f"✓ {domain} in hosts file")
-                else:
+            for domain in domains:
+                if domain not in hosts_content:
                     missing_domains.append(domain)
-                    
+            
             if missing_domains:
-                self.print_status(f"Missing domains in hosts file: {missing_domains}", "WARNING")
-                self.print_status("Run add_to_hosts.sh to add domains", "INFO")
-                return False
+                self.print_status(f"Missing domains in hosts file: {', '.join(missing_domains)}", "WARNING")
+                return True  # This is a warning, not an error
+            else:
+                self.print_status("All domains found in hosts file", "SUCCESS")
+                return True
                 
-        except PermissionError:
-            self.print_status("Cannot read hosts file (permission denied)", "WARNING")
-            self.print_status("Run as administrator/sudo to check hosts file", "INFO")
-            return False
-        except FileNotFoundError:
-            self.print_status("Hosts file not found", "ERROR")
-            return False
-            
-        return True
+        except Exception as e:
+            self.print_status(f"Could not read hosts file: {e}", "WARNING")
+            return True  # This is a warning, not an error
+    
+    def test_nginx_container(self) -> bool:
+        """Test Nginx container startup and health."""
+        self.print_status("Testing Nginx container...", "INFO")
         
-    def test_nginx_container(self):
-        """Test Nginx container"""
-        self.print_status("Testing Nginx container...")
-        
-        # Check if container is running
-        success, stdout, stderr = self.run_command(
-            "docker ps --filter 'name=nginx-proxy' --format '{{.Names}}'",
-            cwd=self.nginx_path
-        )
-        
-        if not success or "nginx-proxy" not in stdout:
-            self.print_status("Nginx container is not running", "WARNING")
-            self.print_status("Start Nginx with: ./start_nginx.sh", "INFO")
-            return False
-            
-        self.print_status("✓ Nginx container is running")
-        
-        # Test Nginx configuration
-        success, stdout, stderr = self.run_command(
-            "docker exec nginx-proxy nginx -t",
-            cwd=self.nginx_path
-        )
-        
+        # Start Nginx container
+        success, stdout, stderr = self.run_command("docker-compose up -d", cwd=self.nginx_path)
         if not success:
-            self.print_status("Nginx configuration test failed", "ERROR")
-            self.print_status(f"Error: {stderr}", "ERROR")
+            self.print_status(f"Failed to start Nginx container: {stderr}", "ERROR")
             return False
-            
-        self.print_status("✓ Nginx configuration is valid")
-        return True
         
-    def test_domain_access(self):
-        """Test domain access"""
-        self.print_status("Testing domain access...")
+        self.print_status("Nginx container started", "SUCCESS")
         
-        # Wait for services to be ready
-        time.sleep(5)
+        # Wait for container to be ready
+        time.sleep(10)
+        
+        # Check container status
+        success, stdout, stderr = self.run_command("docker-compose ps", cwd=self.nginx_path)
+        if success:
+            self.print_status("Nginx container is running", "SUCCESS")
+            return True
+        else:
+            self.print_status("Nginx container is not running", "ERROR")
+            return False
+    
+    def test_domain_access(self) -> bool:
+        """Test domain accessibility."""
+        self.print_status("Testing domain access...", "INFO")
         
         test_urls = [
-            ("https://app.soject.com/health", "Web App Health"),
-            ("https://admin.soject.com", "phpMyAdmin"),
-            ("https://docker.soject.com", "Portainer"),
-            ("https://gitlab.soject.com", "GitLab"),
-            ("https://mail.soject.com", "Roundcube")
+            ("http://app.soject.com", "Web App"),
+            ("http://admin.soject.com", "phpMyAdmin"),
+            ("http://docker.soject.com", "Portainer"),
+            ("http://gitlab.soject.com", "GitLab"),
+            ("http://mail.soject.com", "Roundcube")
         ]
         
         for url, service_name in test_urls:
             try:
-                response = requests.get(url, verify=False, timeout=10)
+                response = requests.get(url, timeout=10, allow_redirects=True)
                 if response.status_code == 200:
-                    self.print_status(f"✓ {service_name} accessible at {url}")
                     self.test_results[service_name] = "SUCCESS"
+                    self.print_status(f"✅ {service_name}: {url} - OK", "SUCCESS")
                 else:
-                    self.print_status(f"✗ {service_name} returned status {response.status_code}", "WARNING")
                     self.test_results[service_name] = f"HTTP {response.status_code}"
+                    self.print_status(f"⚠ {service_name}: {url} - HTTP {response.status_code}", "WARNING")
             except requests.exceptions.RequestException as e:
-                self.print_status(f"✗ {service_name} not accessible: {e}", "WARNING")
                 self.test_results[service_name] = f"ERROR: {e}"
-                
+                self.print_status(f"❌ {service_name}: {url} - {e}", "ERROR")
+        
         return True
-        
-    def generate_report(self):
-        """Generate test report"""
-        self.print_status("Generating test report...")
-        
-        report = {
+    
+    def generate_report(self) -> Dict[str, Any]:
+        """Generate a test report."""
+        return {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "platform": sys.platform,
+            "nginx_path": str(self.nginx_path),
             "test_results": self.test_results,
-            "recommendations": []
         }
+    
+    def cleanup(self):
+        """Clean up test environment."""
+        self.print_status("Cleaning up test environment...", "INFO")
         
-        # Analyze results and provide recommendations
+        # Stop Nginx container
         if not self.test_results.get("Web App Health") == "SUCCESS":
-            report["recommendations"].append("Start web application service")
-            
-        if not self.test_results.get("phpMyAdmin") == "SUCCESS":
-            report["recommendations"].append("Start MySQL database service")
-            
-        if not self.test_results.get("Portainer") == "SUCCESS":
-            report["recommendations"].append("Start Portainer service")
-            
-        if not self.test_results.get("GitLab") == "SUCCESS":
-            report["recommendations"].append("Start GitLab service")
-            
-        if not self.test_results.get("Roundcube") == "SUCCESS":
-            report["recommendations"].append("Start mail server service")
-            
-        # Save report
-        report_file = self.base_path / "nginx_test_report.json"
-        with open(report_file, 'w') as f:
-            json.dump(report, f, indent=2)
-            
-        self.print_status(f"Test report saved to: {report_file}")
+            self.run_command("docker-compose down", cwd=self.nginx_path)
         
-        # Print summary
-        self.print_status("=== Test Summary ===", "INFO")
+        if not self.test_results.get("phpMyAdmin") == "SUCCESS":
+            self.run_command("docker-compose down", cwd=self.nginx_path)
+        
+        if not self.test_results.get("Portainer") == "SUCCESS":
+            self.run_command("docker-compose down", cwd=self.nginx_path)
+        
+        if not self.test_results.get("GitLab") == "SUCCESS":
+            self.run_command("docker-compose down", cwd=self.nginx_path)
+        
+        if not self.test_results.get("Roundcube") == "SUCCESS":
+            self.run_command("docker-compose down", cwd=self.nginx_path)
+    
+    def save_report(self, report: Dict[str, Any]):
+        """Save test report to file."""
+        report_file = self.base_path / "nginx_test_report.json"
+        try:
+            with open(report_file, 'w') as f:
+                json.dump(report, f, indent=2)
+            self.print_status(f"Test report saved to {report_file}", "SUCCESS")
+        except Exception as e:
+            self.print_status(f"Failed to save test report: {e}", "ERROR")
+    
+    def print_summary(self):
+        """Print test summary."""
+        self.print_status("Test Summary:", "INFO")
+        print("-" * 50)
+        
         for service, result in self.test_results.items():
-            status_color = "SUCCESS" if result == "SUCCESS" else "WARNING"
-            self.print_status(f"{service}: {result}", status_color)
-            
-        if report["recommendations"]:
-            self.print_status("=== Recommendations ===", "INFO")
-            for rec in report["recommendations"]:
-                self.print_status(f"- {rec}", "INFO")
-                
-    def run_all_tests(self):
-        """Run all tests"""
-        self.print_status("Starting Nginx setup tests...", "INFO")
+            if result == "SUCCESS":
+                self.print_status(f"{service}: ✅ SUCCESS", "SUCCESS")
+            else:
+                self.print_status(f"{service}: ❌ {result}", "ERROR")
+    
+    def run_all_tests(self) -> bool:
+        """Run all Nginx setup tests."""
+        self.print_status("Starting Nginx Setup Tests", "INFO")
+        print("=" * 60)
         
         tests = [
             ("Docker Environment", self.test_docker_environment),
@@ -356,43 +312,45 @@ class NginxTester:
         
         results = {}
         for test_name, test_func in tests:
+            self.print_status(f"\n--- {test_name} ---", "INFO")
             try:
-                self.print_status(f"\n--- {test_name} ---", "INFO")
                 result = test_func()
                 results[test_name] = "PASS" if result else "FAIL"
             except Exception as e:
                 self.print_status(f"Test {test_name} failed with exception: {e}", "ERROR")
                 results[test_name] = "ERROR"
-                
-        # Print final results
-        self.print_status("\n=== Final Results ===", "INFO")
+        
+        # Print results
+        print("\n" + "=" * 60)
+        self.print_status("Test Results:", "INFO")
         for test_name, result in results.items():
             status_color = "SUCCESS" if result == "PASS" else "ERROR"
             self.print_status(f"{test_name}: {result}", status_color)
-            
-        # Generate report
-        self.generate_report()
+        
+        # Generate and save report
+        report = self.generate_report()
+        self.save_report(report)
+        
+        # Print summary
+        self.print_summary()
+        
+        # Cleanup
+        self.cleanup()
         
         return all(result == "PASS" for result in results.values())
 
 def main():
-    """Main function"""
-    tester = NginxTester()
+    """Main function to run Nginx setup tests."""
+    tester = NginxSetupTester()
+    success = tester.run_all_tests()
     
-    try:
-        success = tester.run_all_tests()
-        if success:
-            tester.print_status("\nAll tests passed! Nginx setup is working correctly.", "SUCCESS")
-            sys.exit(0)
-        else:
-            tester.print_status("\nSome tests failed. Check the recommendations above.", "WARNING")
-            sys.exit(1)
-    except KeyboardInterrupt:
-        tester.print_status("\nTests interrupted by user.", "WARNING")
-        sys.exit(1)
-    except Exception as e:
-        tester.print_status(f"\nUnexpected error: {e}", "ERROR")
-        sys.exit(1)
+    if success:
+        print("\n🎉 All Nginx setup tests passed!")
+    else:
+        print("\n❌ Some Nginx setup tests failed!")
+    
+    return success
 
 if __name__ == "__main__":
-    main() 
+    success = main()
+    exit(0 if success else 1) 

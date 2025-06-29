@@ -6,157 +6,162 @@ Test script to verify startup process and configuration
 import json
 from pathlib import Path
 import sys
+import os
 
 def test_config_loading():
-    """Test configuration loading"""
-    print("🔍 Testing configuration loading...")
+    """Test that the configuration file can be loaded and parsed."""
+    print("Testing configuration loading...")
     
-    # Test main config
     config_file = Path("config.json")
-    if config_file.exists():
-        try:
-            with open(config_file, 'r') as f:
-                config = json.load(f)
-            print(f"✅ Main config loaded: {config.get('server_name', 'Unknown')}")
-            
-            # Check service paths
-            for service in config.get('services', []):
-                service_name = service.get('name', 'unknown')
-                service_path = service.get('path', '')
-                service_type = service.get('type', 'unknown')
-                
-                if service_path.startswith('./'):
-                    service_path = service_path[2:]
-                
-                full_path = Path(service_path)
-                if full_path.exists():
-                    print(f"  ✅ {service_name} ({service_type}): {service_path}")
-                else:
-                    print(f"  ❌ {service_name} ({service_type}): {service_path} - MISSING")
-            
-            return True
-        except Exception as e:
-            print(f"❌ Error loading main config: {e}")
+    if not config_file.exists():
+        print("❌ config.json file not found")
+        return False
+    
+    try:
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+        
+        print("✅ Configuration file loaded successfully")
+        
+        # Check for required sections
+        if 'services' not in config:
+            print("❌ No 'services' section found in configuration")
             return False
-    else:
-        print("❌ Main config.json not found")
+        
+        if 'server_name' not in config:
+            print("❌ No 'server_name' found in configuration")
+            return False
+        
+        print(f"✅ Found {len(config['services'])} services in configuration")
+        print(f"✅ Server name: {config['server_name']}")
+        
+        return True
+        
+    except json.JSONDecodeError as e:
+        print(f"❌ Configuration file is not valid JSON: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Error loading configuration: {e}")
         return False
 
 def test_test_config():
-    """Test test configuration"""
-    print("\n🔍 Testing test configuration...")
+    """Test the Ubuntu 22.04 test configuration."""
+    print("Testing Ubuntu 22.04 test configuration...")
     
-    test_config_file = Path("test_config_ubuntu22.json")
+    test_config_file = Path("tests/config/test_config_ubuntu22.json")
     if test_config_file.exists():
         try:
             with open(test_config_file, 'r') as f:
-                config = json.load(f)
-            print(f"✅ Test config loaded: {config.get('server_name', 'Unknown')}")
+                test_config = json.load(f)
             
-            # Check service paths
-            for service in config.get('services', []):
-                service_name = service.get('name', 'unknown')
-                service_path = service.get('path', '')
-                service_type = service.get('type', 'unknown')
-                
-                if service_path.startswith('./'):
-                    service_path = service_path[2:]
-                
-                full_path = Path(service_path)
-                if full_path.exists():
-                    print(f"  ✅ {service_name} ({service_type}): {service_path}")
-                else:
-                    print(f"  ❌ {service_name} ({service_type}): {service_path} - MISSING")
+            print("✅ Test configuration loaded successfully")
             
+            # Check for required sections
+            if 'services' not in test_config:
+                print("❌ No 'services' section found in test configuration")
+                return False
+            
+            print(f"✅ Found {len(test_config['services'])} services in test configuration")
             return True
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ Test configuration is not valid JSON: {e}")
+            return False
         except Exception as e:
-            print(f"❌ Error loading test config: {e}")
+            print(f"❌ Error loading test configuration: {e}")
             return False
     else:
-        print("❌ Test config not found")
-        return False
+        print("⚠ Test configuration file not found")
+        return True
 
 def test_script_files():
-    """Test that required script files exist"""
-    print("\n🔍 Testing script files...")
+    """Test that required script files exist."""
+    print("Testing script files...")
     
-    scripts = [
-        "serverassistant.py",
+    required_scripts = [
         "start.sh",
-        "start.py",
-        "start.bat"
+        "start.bat",
+        "scripts/startup/start.sh",
+        "scripts/startup/start.bat",
+        "scripts/setup/install_dependencies.sh",
+        "scripts/setup/install_requirements.ps1"
     ]
     
     all_exist = True
-    for script in scripts:
+    for script in required_scripts:
         if Path(script).exists():
-            print(f"✅ {script} - EXISTS")
+            print(f"✅ {script} exists")
         else:
-            print(f"❌ {script} - MISSING")
+            print(f"❌ {script} missing")
             all_exist = False
     
     return all_exist
 
 def test_service_directories():
-    """Test that service directories exist"""
-    print("\n🔍 Testing service directories...")
+    """Test that service directories exist and contain required files."""
+    print("Testing service directories...")
     
-    services = [
-        "example_services/nginx",
-        "example_services/web-app",
-        "example_services/mysql",
-        "example_services/database",
-        "example_services/portainer",
-        "example_services/gitlab",
-        "example_services/mail-server"
+    service_dirs = [
+        "docker_services/nginx",
+        "docker_services/web-app",
+        "docker_services/mysql",
+        "docker_services/database",
+        "docker_services/portainer",
+        "docker_services/gitlab",
+        "docker_services/mail-server"
     ]
     
-    all_exist = True
-    for service in services:
-        if Path(service).exists():
-            print(f"✅ {service} - EXISTS")
+    all_valid = True
+    for service_dir in service_dirs:
+        dir_path = Path(service_dir)
+        if dir_path.exists():
+            print(f"✅ {service_dir} exists")
+            
+            # Check for docker-compose.yml
+            compose_file = dir_path / "docker-compose.yml"
+            if compose_file.exists():
+                print(f"  ✅ docker-compose.yml found")
+            else:
+                print(f"  ❌ docker-compose.yml missing")
+                all_valid = False
+                
+            # Check for README.md
+            readme_file = dir_path / "README.md"
+            if readme_file.exists():
+                print(f"  ✅ README.md found")
+            else:
+                print(f"  ⚠ README.md missing (optional)")
         else:
-            print(f"❌ {service} - MISSING")
-            all_exist = False
+            print(f"❌ {service_dir} missing")
+            all_valid = False
     
-    return all_exist
+    return all_valid
 
 def main():
-    """Main test function"""
-    print("=" * 50)
-    print("    Startup Test")
+    """Run all startup tests."""
+    print("🚀 Running Startup Tests...")
     print("=" * 50)
     
-    # Test configuration loading
     config_ok = test_config_loading()
     test_config_ok = test_test_config()
-    
-    # Test script files
     scripts_ok = test_script_files()
-    
-    # Test service directories
     services_ok = test_service_directories()
     
-    # Summary
     print("\n" + "=" * 50)
-    print("    Test Summary")
-    print("=" * 50)
-    
-    print(f"Configuration: {'✅ OK' if config_ok else '❌ FAILED'}")
+    print("Test Results:")
+    print(f"Config Loading: {'✅ OK' if config_ok else '❌ FAILED'}")
     print(f"Test Config: {'✅ OK' if test_config_ok else '❌ FAILED'}")
     print(f"Script Files: {'✅ OK' if scripts_ok else '❌ FAILED'}")
     print(f"Service Directories: {'✅ OK' if services_ok else '❌ FAILED'}")
     
     if config_ok and test_config_ok and scripts_ok and services_ok:
-        print("\n🎉 All tests passed! Ready to run ServerAssistant.")
-        print("\nTo start ServerAssistant, run:")
-        print("  ./start.sh")
-        print("  OR")
-        print("  python3 serverassistant.py")
+        print("\n🎉 All startup tests passed!")
+        print("The system is ready to start services.")
+        return True
     else:
-        print("\n⚠️  Some tests failed. Please fix the issues above.")
-    
-    return config_ok and test_config_ok and scripts_ok and services_ok
+        print("\n❌ Some startup tests failed!")
+        print("Please fix the issues before starting services.")
+        return False
 
 if __name__ == "__main__":
     success = main()

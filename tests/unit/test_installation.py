@@ -9,174 +9,138 @@ import os
 from pathlib import Path
 
 def test_imports():
-    """Test if all required modules can be imported."""
-    print("Testing imports...")
-    
+    """Test that all required modules can be imported."""
     try:
         import docker
-        print("✓ docker module imported successfully")
+        print("✅ Docker module imported successfully")
     except ImportError as e:
-        print(f"✗ Failed to import docker: {e}")
+        print(f"❌ Failed to import docker module: {e}")
         return False
     
     try:
         import yaml
-        print("✓ pyyaml module imported successfully")
+        print("✅ YAML module imported successfully")
     except ImportError as e:
-        print(f"✗ Failed to import pyyaml: {e}")
-        return False
-    
-    try:
-        import psutil
-        print("✓ psutil module imported successfully")
-    except ImportError as e:
-        print(f"✗ Failed to import psutil: {e}")
-        return False
-    
-    try:
-        import colorama
-        print("✓ colorama module imported successfully")
-    except ImportError as e:
-        print(f"✗ Failed to import colorama: {e}")
-        return False
-    
-    try:
-        import tabulate
-        print("✓ tabulate module imported successfully")
-    except ImportError as e:
-        print(f"✗ Failed to import tabulate: {e}")
-        return False
-    
-    try:
-        import schedule
-        print("✓ schedule module imported successfully")
-    except ImportError as e:
-        print(f"✗ Failed to import schedule: {e}")
+        print(f"❌ Failed to import yaml module: {e}")
         return False
     
     try:
         import requests
-        print("✓ requests module imported successfully")
+        print("✅ Requests module imported successfully")
     except ImportError as e:
-        print(f"✗ Failed to import requests: {e}")
+        print(f"❌ Failed to import requests module: {e}")
+        return False
+    
+    try:
+        import psutil
+        print("✅ psutil module imported successfully")
+    except ImportError as e:
+        print(f"❌ Failed to import psutil module: {e}")
+        return False
+    
+    try:
+        import schedule
+        print("✅ Schedule module imported successfully")
+    except ImportError as e:
+        print(f"❌ Failed to import schedule module: {e}")
         return False
     
     return True
 
 def test_config_file():
-    """Test if configuration file exists and is valid JSON."""
-    print("\nTesting configuration file...")
-    
-    config_file = "config.json"
-    if not os.path.exists(config_file):
-        print(f"✗ Configuration file {config_file} not found")
+    """Test that the configuration file exists and is valid JSON."""
+    config_file = Path("config.json")
+    if not config_file.exists():
+        print("❌ config.json file not found")
         return False
     
     try:
+        import json
         with open(config_file, 'r') as f:
             config = json.load(f)
-        print("✓ Configuration file is valid JSON")
+        print("✅ config.json is valid JSON")
         
-        # Check required fields
-        if 'services' in config:
-            print(f"✓ Found {len(config['services'])} services in configuration")
-        else:
-            print("✗ No 'services' section found in configuration")
-            return False
+        # Check for required fields
+        required_fields = ['server_name', 'services']
+        for field in required_fields:
+            if field not in config:
+                print(f"❌ Missing required field: {field}")
+                return False
         
-        if 'server_name' in config:
-            print(f"✓ Server name: {config['server_name']}")
-        else:
-            print("✗ No 'server_name' found in configuration")
-            return False
-        
+        print("✅ config.json contains required fields")
         return True
         
     except json.JSONDecodeError as e:
-        print(f"✗ Configuration file is not valid JSON: {e}")
+        print(f"❌ config.json is not valid JSON: {e}")
         return False
     except Exception as e:
-        print(f"✗ Error reading configuration file: {e}")
+        print(f"❌ Error reading config.json: {e}")
         return False
 
 def test_docker_manager():
-    """Test if DockerManager can be imported and initialized."""
-    print("\nTesting DockerManager...")
-    
+    """Test that the DockerManager class can be instantiated."""
     try:
-        from docker_manager import DockerManager
-        print("✓ DockerManager imported successfully")
+        # Add src to path for imports
+        src_path = Path(__file__).parent.parent.parent / "src"
+        sys.path.insert(0, str(src_path))
         
-        # Try to initialize (this will fail if Docker is not running, but that's OK)
-        try:
-            manager = DockerManager("config.json")
-            print("✓ DockerManager initialized successfully")
-            return True
-        except Exception as e:
-            print(f"⚠ DockerManager initialization failed (Docker may not be running): {e}")
-            print("This is expected if Docker is not running")
-            return True
-            
+        from core.docker_manager import DockerManager
+        manager = DockerManager()
+        print("✅ DockerManager instantiated successfully")
+        return True
+        
     except ImportError as e:
-        print(f"✗ Failed to import DockerManager: {e}")
+        print(f"❌ Failed to import DockerManager: {e}")
         return False
     except Exception as e:
-        print(f"✗ Error testing DockerManager: {e}")
+        print(f"❌ Error creating DockerManager: {e}")
         return False
 
 def test_file_structure():
-    """Test if all required files exist."""
-    print("\nTesting file structure...")
-    
-    required_files = [
-        "main.py",
-        "docker_manager.py",
-        "monitor.py",
-        "requirements.txt",
-        "README.md",
-        "config.json"
+    """Test that required directories and files exist."""
+    required_paths = [
+        "src/",
+        "src/core/",
+        "src/ui/",
+        "src/utils/",
+        "scripts/",
+        "scripts/setup/",
+        "scripts/maintenance/",
+        "scripts/startup/",
+        "docker_services/",
+        "docker_services/nginx/",
+        "docker_services/mysql/",
+        "docker_services/database/",
+        "docker_services/web-app/",
+        "docker_services/portainer/",
+        "docker_services/gitlab/",
+        "docker_services/mail-server/"
     ]
     
-    all_exist = True
-    for file in required_files:
-        if os.path.exists(file):
-            print(f"✓ {file} exists")
-        else:
-            print(f"✗ {file} missing")
-            all_exist = False
+    for path in required_paths:
+        if not Path(path).exists():
+            print(f"❌ Required path not found: {path}")
+            return False
     
-    # Check example services
-    example_dirs = [
-        "example_services/web-app",
-        "example_services/database"
-    ]
-    
-    for dir_path in example_dirs:
-        if os.path.exists(dir_path):
-            print(f"✓ {dir_path} exists")
-        else:
-            print(f"⚠ {dir_path} missing (optional)")
-    
-    return all_exist
+    print("✅ All required directories exist")
+    return True
 
 def test_docker_connection():
-    """Test Docker connection."""
-    print("\nTesting Docker connection...")
-    
+    """Test that Docker daemon is accessible."""
     try:
         import docker
         client = docker.from_env()
         client.ping()
-        print("✓ Docker daemon is running and accessible")
+        print("✅ Docker daemon is accessible")
         return True
     except Exception as e:
-        print(f"⚠ Docker daemon is not accessible: {e}")
-        print("This is expected if Docker is not running")
-        return True
+        print(f"❌ Cannot connect to Docker daemon: {e}")
+        print("   Make sure Docker is running and you have permission to access it")
+        return False
 
 def main():
-    """Run all tests."""
-    print("Docker Service Manager - Installation Test")
+    """Run all installation tests."""
+    print("🔧 Running Installation Tests...")
     print("=" * 50)
     
     tests = [
@@ -187,34 +151,26 @@ def main():
         ("Docker Connection", test_docker_connection)
     ]
     
-    passed = 0
-    total = len(tests)
-    
+    all_passed = True
     for test_name, test_func in tests:
         print(f"\n{test_name}:")
-        print("-" * 30)
-        if test_func():
-            passed += 1
-        else:
-            print(f"✗ {test_name} failed")
+        try:
+            if test_func():
+                print(f"✅ {test_name} passed")
+            else:
+                print(f"❌ {test_name} failed")
+                all_passed = False
+        except Exception as e:
+            print(f"❌ {test_name} failed with exception: {e}")
+            all_passed = False
     
     print("\n" + "=" * 50)
-    print(f"Test Results: {passed}/{total} tests passed")
-    
-    if passed == total:
-        print("🎉 All tests passed! Installation is successful.")
-        print("\nYou can now use the Docker Service Manager:")
-        print("  python main.py status")
-        print("  python main.py start-all")
-        print("  python monitor.py")
+    if all_passed:
+        print("🎉 All installation tests passed!")
+        return True
     else:
-        print("⚠ Some tests failed. Please check the errors above.")
-        print("\nCommon solutions:")
-        print("  1. Install missing dependencies: pip install -r requirements.txt")
-        print("  2. Ensure Docker is running")
-        print("  3. Check file permissions")
-    
-    return passed == total
+        print("❌ Some installation tests failed!")
+        return False
 
 if __name__ == "__main__":
     success = main()

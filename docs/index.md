@@ -44,26 +44,39 @@ Welcome to the ServerAssistant documentation! This directory contains all the do
 ## 📁 Directory Structure
 
 ```
-docs/
-├── index.md                     # This file - Documentation index
-├── guides/                      # User guides and tutorials
-│   ├── usage-guide.md
-│   ├── reorganization-guide.md
-│   └── ubuntu22-test-guide.md
-├── setup/                       # Setup and installation guides
-│   ├── startup-guide.md
-│   ├── persistent-storage-guide.md
-│   └── cloudflare-setup.md
-├── development/                 # Development documentation
-│   ├── development-guide.md
-│   └── reorganization-summary.md
-└── deployment/                  # Deployment and production guides
-    └── transfer-to-ubuntu.md
+serverasistant/
+├── docs/                    # 📚 Organized documentation
+│   ├── index.md            # This file - Documentation index
+│   ├── guides/             # User guides and tutorials
+│   ├── setup/              # Setup and installation guides
+│   ├── development/        # Development documentation
+│   └── deployment/         # Deployment and production guides
+├── src/                    # 🐍 Source code
+│   ├── core/              # Core application logic
+│   ├── ui/                # User interface components
+│   └── utils/             # Utility functions
+├── scripts/               # 🔧 Utility scripts
+│   ├── setup/            # Installation and setup scripts
+│   ├── maintenance/      # Maintenance and cleanup scripts
+│   └── testing/          # Testing and validation scripts
+├── docker_services/       # 📦 Docker service definitions
+│   ├── nginx/            # Nginx reverse proxy setup
+│   ├── mysql/            # MySQL database service
+│   ├── gitlab/           # GitLab development platform
+│   └── mail-server/      # Complete email stack
+├── tests/                # 🧪 Test suite
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
+│   ├── e2e/              # End-to-end tests
+│   └── scripts/          # Test scripts
+└── config.json           # ⚙️ Main configuration file
 ```
 
 ## 🔄 Recent Changes
 
 All documentation has been reorganized from the root directory into this structured format for better navigation and maintainability. Each file has been renamed to follow consistent naming conventions.
+
+The `example_services` folder has been renamed to `docker_services` to better reflect its purpose as a collection of Docker service definitions.
 
 ## 📝 Contributing
 

@@ -1,143 +1,168 @@
 {
-  "server_name": "ubuntu22-test-server",
-  "environment": "testing",
-  "log_level": "DEBUG",
+  "server_name": "ubuntu22-server",
+  "environment": "production",
+  "log_level": "INFO",
   "platform": "linux",
   "services": [
     {
       "name": "nginx",
       "type": "docker-compose",
       "enabled": true,
-      "path": "./example_services/nginx",
-      "compose_file": "docker-compose.yml",
-      "services": ["nginx"],
-      "restart_policy": "unless-stopped",
-      "domains": {
-        "app.soject.com": "web-app",
-        "admin.soject.com": "phpmyadmin",
-        "docker.soject.com": "portainer",
-        "gitlab.soject.com": "gitlab",
-        "mail.soject.com": "roundcube"
-      },
-      "ports": ["80:80", "443:443"],
+      "path": "./docker_services/nginx",
+      "description": "Nginx reverse proxy with SSL/TLS support",
+      "ports": [80, 443],
+      "domains": [
+        "app.soject.com",
+        "admin.soject.com",
+        "docker.soject.com",
+        "gitlab.soject.com",
+        "mail.soject.com"
+      ],
       "health_check": {
         "url": "http://localhost/health",
         "interval": 30,
         "timeout": 10,
         "retries": 3
       },
-      "dependencies": ["web-app", "mysql-database", "postgres-redis", "portainer", "gitlab", "mail-server"]
+      "backup": {
+        "enabled": true,
+        "schedule": "0 2 * * *",
+        "retention_days": 30
+      }
     },
     {
       "name": "web-app",
       "type": "docker-compose",
       "enabled": true,
-      "path": "./example_services/web-app",
-      "compose_file": "docker-compose.yml",
-      "services": ["web-app"],
-      "ports": ["8080:8080"],
-      "environment": {
-        "NODE_ENV": "testing",
-        "DB_HOST": "mysql",
-        "DB_PORT": "3306",
-        "DB_NAME": "myapp",
-        "DB_USER": "myapp_user",
-        "DB_PASSWORD": "myapp_password"
-      },
-      "volumes": [
-        "/home/admin1/serverimp/logs:/app/logs"
-      ],
-      "restart_policy": "unless-stopped",
+      "path": "./docker_services/web-app",
+      "description": "Main Flask web application",
+      "ports": [8080],
+      "domains": ["app.soject.com"],
       "health_check": {
         "url": "http://localhost:8080/health",
         "interval": 30,
         "timeout": 10,
         "retries": 3
+      },
+      "backup": {
+        "enabled": false
       }
     },
     {
-      "name": "mysql-database",
+      "name": "mysql",
       "type": "docker-compose",
       "enabled": true,
-      "path": "./example_services/mysql",
-      "compose_file": "docker-compose.yml",
-      "services": ["mysql", "phpmyadmin"],
-      "restart_policy": "unless-stopped",
+      "path": "./docker_services/mysql",
+      "description": "MySQL database with phpMyAdmin",
+      "ports": [3306, 8080],
+      "domains": ["admin.soject.com"],
       "health_check": {
-        "command": "mysqladmin ping -h localhost -u root -proot_password_secure",
+        "url": "http://localhost:8080/health",
         "interval": 30,
         "timeout": 10,
         "retries": 3
+      },
+      "backup": {
+        "enabled": true,
+        "schedule": "0 3 * * *",
+        "retention_days": 30
       }
     },
     {
-      "name": "postgres-redis",
+      "name": "database",
       "type": "docker-compose",
       "enabled": true,
-      "path": "./example_services/database",
-      "compose_file": "docker-compose.yml",
-      "services": ["postgres", "redis"],
-      "restart_policy": "unless-stopped",
+      "path": "./docker_services/database",
+      "description": "PostgreSQL database with Redis cache",
+      "ports": [5432, 6379],
+      "domains": [],
       "health_check": {
-        "command": "pg_isready -U postgres",
+        "url": "http://localhost:5432/health",
         "interval": 30,
         "timeout": 10,
         "retries": 3
+      },
+      "backup": {
+        "enabled": true,
+        "schedule": "0 4 * * *",
+        "retention_days": 30
       }
     },
     {
       "name": "portainer",
       "type": "docker-compose",
       "enabled": true,
-      "path": "./example_services/portainer",
-      "compose_file": "docker-compose.yml",
-      "services": ["portainer"],
-      "restart_policy": "unless-stopped",
+      "path": "./docker_services/portainer",
+      "description": "Docker container management UI",
+      "ports": [9000],
+      "domains": ["docker.soject.com"],
       "health_check": {
-        "url": "http://localhost:9000/api/status",
+        "url": "http://localhost:9000/health",
         "interval": 30,
         "timeout": 10,
         "retries": 3
+      },
+      "backup": {
+        "enabled": false
       }
     },
     {
       "name": "gitlab",
       "type": "docker-compose",
       "enabled": true,
-      "path": "./example_services/gitlab",
-      "compose_file": "docker-compose.yml",
-      "services": ["gitlab"],
-      "restart_policy": "unless-stopped",
+      "path": "./docker_services/gitlab",
+      "description": "GitLab development platform",
+      "ports": [8081],
+      "domains": ["gitlab.soject.com"],
       "health_check": {
-        "url": "http://localhost:8081/help",
+        "url": "http://localhost:8081/health",
         "interval": 60,
         "timeout": 30,
-        "retries": 5
+        "retries": 3
+      },
+      "backup": {
+        "enabled": true,
+        "schedule": "0 5 * * *",
+        "retention_days": 30
       }
     },
     {
       "name": "mail-server",
       "type": "docker-compose",
       "enabled": true,
-      "path": "./example_services/mail-server",
-      "compose_file": "docker-compose.yml",
-      "services": ["postfix", "dovecot", "spamassassin", "roundcube"],
-      "restart_policy": "unless-stopped",
+      "path": "./docker_services/mail-server",
+      "description": "Complete email stack with webmail",
+      "ports": [25, 587, 993],
+      "domains": ["mail.soject.com"],
       "health_check": {
-        "command": "telnet localhost 25",
+        "url": "http://localhost:8080/health",
         "interval": 30,
         "timeout": 10,
         "retries": 3
+      },
+      "backup": {
+        "enabled": true,
+        "schedule": "0 6 * * *",
+        "retention_days": 30
       }
     },
     {
       "name": "monitoring",
       "type": "docker-compose",
       "enabled": false,
-      "path": "./example_services/monitoring",
-      "compose_file": "docker-compose.yml",
-      "services": ["prometheus", "grafana"],
-      "restart_policy": "unless-stopped"
+      "path": "./docker_services/monitoring",
+      "description": "Monitoring and alerting stack",
+      "ports": [3000, 9090],
+      "domains": [],
+      "health_check": {
+        "url": "http://localhost:3000/health",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      },
+      "backup": {
+        "enabled": false
+      }
     }
   ],
   "global_settings": {
@@ -145,7 +170,7 @@
     "docker_host": "auto",
     "log_retention_days": 7,
     "backup_enabled": true,
-    "backup_schedule": "0 2 * * *",
+    "backup_schedule": "0 1 * * *",
     "platform_specific": {
       "linux": {
         "docker_socket": "/var/run/docker.sock",
@@ -165,6 +190,36 @@
     "notification": {
       "email": "test@example.com",
       "webhook": ""
+    }
+  },
+  "notifications": {
+    "email": {
+      "enabled": true,
+      "smtp_server": "smtp.gmail.com",
+      "smtp_port": 587,
+      "username": "your-email@gmail.com",
+      "password": "your-app-password",
+      "recipients": ["admin@soject.com"]
+    },
+    "webhook": {
+      "enabled": false,
+      "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+    }
+  },
+  "backup": {
+    "enabled": true,
+    "schedule": "0 1 * * *",
+    "retention_days": 30,
+    "compression": true,
+    "encryption": false
+  },
+  "monitoring": {
+    "enabled": true,
+    "interval": 60,
+    "log_rotation": {
+      "enabled": true,
+      "max_size": "100MB",
+      "backup_count": 5
     }
   }
 } 

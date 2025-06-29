@@ -84,11 +84,16 @@ serverasistant/
 │   ├── setup/            # Installation and setup scripts
 │   ├── maintenance/      # Maintenance and cleanup scripts
 │   └── testing/          # Testing and validation scripts
-├── example_services/      # 📦 Example Docker services
+├── docker_services/       # 📦 Docker service definitions
 │   ├── nginx/            # Nginx reverse proxy setup
 │   ├── mysql/            # MySQL database service
 │   ├── gitlab/           # GitLab development platform
 │   └── mail-server/      # Complete email stack
+├── tests/                # 🧪 Test suite
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
+│   ├── e2e/              # End-to-end tests
+│   └── scripts/          # Test scripts
 └── config.json           # ⚙️ Main configuration file
 ```
 
