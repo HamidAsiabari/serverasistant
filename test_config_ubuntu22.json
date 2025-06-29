@@ -1,0 +1,170 @@
+{
+  "server_name": "ubuntu22-test-server",
+  "environment": "testing",
+  "log_level": "DEBUG",
+  "platform": "linux",
+  "services": [
+    {
+      "name": "nginx",
+      "type": "docker-compose",
+      "enabled": true,
+      "path": "./example_services/nginx",
+      "compose_file": "docker-compose.yml",
+      "services": ["nginx"],
+      "restart_policy": "unless-stopped",
+      "domains": {
+        "app.soject.com": "web-app",
+        "admin.soject.com": "phpmyadmin",
+        "docker.soject.com": "portainer",
+        "gitlab.soject.com": "gitlab",
+        "mail.soject.com": "roundcube"
+      },
+      "ports": ["80:80", "443:443"],
+      "health_check": {
+        "url": "http://localhost/health",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      },
+      "dependencies": ["web-app", "mysql-database", "postgres-redis", "portainer", "gitlab", "mail-server"]
+    },
+    {
+      "name": "web-app",
+      "type": "docker-compose",
+      "enabled": true,
+      "path": "./example_services/web-app",
+      "compose_file": "docker-compose.yml",
+      "services": ["web-app"],
+      "ports": ["8080:8080"],
+      "environment": {
+        "NODE_ENV": "testing",
+        "DB_HOST": "mysql",
+        "DB_PORT": "3306",
+        "DB_NAME": "myapp",
+        "DB_USER": "myapp_user",
+        "DB_PASSWORD": "myapp_password"
+      },
+      "volumes": [
+        "/home/admin1/serverimp/logs:/app/logs"
+      ],
+      "restart_policy": "unless-stopped",
+      "health_check": {
+        "url": "http://localhost:8080/health",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      }
+    },
+    {
+      "name": "mysql-database",
+      "type": "docker-compose",
+      "enabled": true,
+      "path": "./example_services/mysql",
+      "compose_file": "docker-compose.yml",
+      "services": ["mysql", "phpmyadmin"],
+      "restart_policy": "unless-stopped",
+      "health_check": {
+        "command": "mysqladmin ping -h localhost -u root -proot_password_secure",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      }
+    },
+    {
+      "name": "postgres-redis",
+      "type": "docker-compose",
+      "enabled": true,
+      "path": "./example_services/database",
+      "compose_file": "docker-compose.yml",
+      "services": ["postgres", "redis"],
+      "restart_policy": "unless-stopped",
+      "health_check": {
+        "command": "pg_isready -U postgres",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      }
+    },
+    {
+      "name": "portainer",
+      "type": "docker-compose",
+      "enabled": true,
+      "path": "./example_services/portainer",
+      "compose_file": "docker-compose.yml",
+      "services": ["portainer"],
+      "restart_policy": "unless-stopped",
+      "health_check": {
+        "url": "http://localhost:9000/api/status",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      }
+    },
+    {
+      "name": "gitlab",
+      "type": "docker-compose",
+      "enabled": true,
+      "path": "./example_services/gitlab",
+      "compose_file": "docker-compose.yml",
+      "services": ["gitlab"],
+      "restart_policy": "unless-stopped",
+      "health_check": {
+        "url": "http://localhost:8081/help",
+        "interval": 60,
+        "timeout": 30,
+        "retries": 5
+      }
+    },
+    {
+      "name": "mail-server",
+      "type": "docker-compose",
+      "enabled": true,
+      "path": "./example_services/mail-server",
+      "compose_file": "docker-compose.yml",
+      "services": ["postfix", "dovecot", "spamassassin", "roundcube"],
+      "restart_policy": "unless-stopped",
+      "health_check": {
+        "command": "telnet localhost 25",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      }
+    },
+    {
+      "name": "monitoring",
+      "type": "docker-compose",
+      "enabled": false,
+      "path": "./example_services/monitoring",
+      "compose_file": "docker-compose.yml",
+      "services": ["prometheus", "grafana"],
+      "restart_policy": "unless-stopped"
+    }
+  ],
+  "global_settings": {
+    "docker_socket": "auto",
+    "docker_host": "auto",
+    "log_retention_days": 7,
+    "backup_enabled": true,
+    "backup_schedule": "0 2 * * *",
+    "platform_specific": {
+      "linux": {
+        "docker_socket": "/var/run/docker.sock",
+        "docker_host": "unix:///var/run/docker.sock",
+        "log_path": "/home/admin1/serverimp/logs",
+        "compose_command": "docker-compose",
+        "file_permissions": "755"
+      },
+      "windows": {
+        "docker_socket": "npipe:////./pipe/docker_engine",
+        "docker_host": "npipe:////./pipe/docker_engine",
+        "log_path": ".\\logs",
+        "compose_command": "docker-compose.exe",
+        "file_permissions": "644"
+      }
+    },
+    "notification": {
+      "email": "test@example.com",
+      "webhook": ""
+    }
+  }
+} 

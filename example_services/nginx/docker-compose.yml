@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./logs:/var/log/nginx
+    networks:
+      - nginx_network
+      - web_network
+      - mail_network
+      - gitlab_network
+      - portainer_network
+
+networks:
+  nginx_network:
+    driver: bridge
+  web_network:
+    external: true
+    name: web_network
+  mail_network:
+    external: true
+    name: mail_network
+  gitlab_network:
+    external: true
+    name: gitlab_network
+  portainer_network:
+    external: true
+    name: portainer_network 

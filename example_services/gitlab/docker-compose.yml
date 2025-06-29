@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: unless-stopped
+    hostname: 'gitlab.local'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8081'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2224
+    ports:
+      - '8081:80'      # Web UI
+      - '443:443'      # HTTPS (optional, can be mapped)
+      - '2224:22'      # SSH
+    volumes:
+      - ./gitlab/config:/etc/gitlab
+      - ./gitlab/logs:/var/log/gitlab
+      - ./gitlab/data:/var/opt/gitlab
+      - ./gitlab/backups:/var/opt/gitlab/backups
+    depends_on:
+      - redis
+      - postgres
+    healthcheck:
+      test: ["CMD", "/opt/gitlab/bin/gitlab-healthcheck", "--fail"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    networks:
+      - gitlab_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: gitlab-redis
+    restart: unless-stopped
+    volumes:
+      - ./gitlab/redis:/data
+    networks:
+      - gitlab_network
+
+  postgres:
+    image: postgres:15
+    container_name: gitlab-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gitlabhq_production
+      POSTGRES_USER: gitlab
+      POSTGRES_PASSWORD: gitlabpass
+    volumes:
+      - ./gitlab/postgres:/var/lib/postgresql/data
+    networks:
+      - gitlab_network
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
+  gitlab_redis_data:
+  gitlab_postgres_data:
+
+networks:
+  gitlab_network:
+    driver: bridge 

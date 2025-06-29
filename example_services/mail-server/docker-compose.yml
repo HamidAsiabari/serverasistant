@@ -1,0 +1,102 @@
+services:
+  postfix:
+    image: catatnight/postfix:latest
+    container_name: postfix
+    restart: unless-stopped
+    hostname: mail.soject.com
+    ports:
+      - "25:25"    # SMTP
+      - "587:587"  # SMTP submission
+    volumes:
+      - ./postfix/config:/etc/postfix
+      - ./postfix/logs:/var/log
+      - ./mail/data:/var/mail
+      - ./mail/queue:/var/spool/postfix
+    environment:
+      - maildomain=soject.com
+      - smtp_user=admin:admin_password
+    networks:
+      - mail_network
+
+  dovecot:
+    image: dovecot/dovecot:latest
+    container_name: dovecot
+    restart: unless-stopped
+    ports:
+      - "110:110"  # POP3
+      - "143:143"  # IMAP
+      - "993:993"  # IMAPS
+      - "995:995"  # POP3S
+    volumes:
+      - ./dovecot/config:/etc/dovecot
+      - ./mail/data:/var/mail
+      - ./dovecot/logs:/var/log
+    depends_on:
+      - postfix
+    networks:
+      - mail_network
+
+  spamassassin:
+    image: spamassassin/spamassassin:latest
+    container_name: spamassassin
+    restart: unless-stopped
+    volumes:
+      - ./spamassassin/config:/etc/spamassassin
+      - ./spamassassin/logs:/var/log
+      - ./spamassassin/data:/var/lib/spamassassin
+    environment:
+      - SA_TAG=2.0
+      - SA_TAG2=6.31
+      - SA_KILL=6.31
+    networks:
+      - mail_network
+
+  roundcube:
+    image: roundcube/roundcubemail:latest
+    container_name: roundcube
+    restart: unless-stopped
+    ports:
+      - "8083:80"  # Webmail
+    volumes:
+      - ./roundcube/config:/var/www/html/config
+      - ./roundcube/logs:/var/log
+      - ./roundcube/data:/var/www/html/temp
+    environment:
+      - ROUNDCUBEMAIL_DB_TYPE=sqlite
+      - ROUNDCUBEMAIL_DB_HOST=db
+      - ROUNDCUBEMAIL_DB_NAME=roundcube
+      - ROUNDCUBEMAIL_DB_USER=roundcube
+      - ROUNDCUBEMAIL_DB_PASSWORD=roundcube_password
+      - ROUNDCUBEMAIL_SMTP_HOST=postfix
+      - ROUNDCUBEMAIL_SMTP_PORT=587
+      - ROUNDCUBEMAIL_IMAP_HOST=dovecot
+      - ROUNDCUBEMAIL_IMAP_PORT=143
+    depends_on:
+      - postfix
+      - dovecot
+      - db
+    networks:
+      - mail_network
+
+  db:
+    image: mysql:8.0
+    container_name: mail-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_secure
+      MYSQL_DATABASE: roundcube
+      MYSQL_USER: roundcube
+      MYSQL_PASSWORD: roundcube_password
+    volumes:
+      - ./mail/database:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - mail_network
+
+volumes:
+  mail_data:
+  mail_db_data:
+
+networks:
+  mail_network:
+    driver: bridge 

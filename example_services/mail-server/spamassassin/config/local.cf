@@ -1,0 +1,53 @@
+# SpamAssassin local configuration file
+
+# Bayesian filtering
+use_bayes 1
+bayes_auto_learn 1
+bayes_auto_learn_threshold_nonspam 0.1
+bayes_auto_learn_threshold_spam 12.0
+
+# Network tests
+skip_rbl_checks 0
+use_razor2 1
+use_pyzor 1
+use_dcc 1
+
+# Header tests
+header FROM_HAS_DNSPTR eval:check_from_in_dnsbl()
+header FROM_DNSPTR_FAIL eval:check_from_in_dnsbl()
+
+# Body tests
+body URIBL_DBL_SPAM eval:check_uridnsbl('dbl.spamhaus.org')
+body URIBL_SBL eval:check_uridnsbl('sbl.spamhaus.org')
+body URIBL_XBL eval:check_uridnsbl('xbl.spamhaus.org')
+
+# Scoring
+score BAYES_99 3.0
+score BAYES_999 2.0
+score BAYES_00 -0.5
+score URIBL_DBL_SPAM 2.0
+score URIBL_SBL 2.0
+score URIBL_XBL 2.0
+score FROM_HAS_DNSPTR -0.1
+score FROM_DNSPTR_FAIL 1.0
+
+# Whitelist and blacklist
+whitelist_from *@example.com
+whitelist_from *@trusted-domain.com
+
+# Required score
+required_score 5.0
+
+# Report safe
+report_safe 1
+
+# Auto-whitelist
+auto_whitelist 1
+auto_whitelist_factor 0.5
+
+# Network settings
+trusted_networks 127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+
+# Logging
+logfile /var/log/spamassassin/spamd.log
+debug 0 
