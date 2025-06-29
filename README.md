@@ -17,11 +17,10 @@ A comprehensive Python application for managing and running Docker services base
 git clone <repository-url>
 cd serverasistant
 
-# Run installation script
-chmod +x scripts/setup/install_dependencies.sh
-./scripts/setup/install_dependencies.sh
+# First time setup (creates virtual environment, installs dependencies)
+./setup.sh
 
-# Start the application
+# Normal startup (after first-time setup)
 ./start.sh
 ```
 
@@ -31,11 +30,36 @@ chmod +x scripts/setup/install_dependencies.sh
 git clone <repository-url>
 cd serverasistant
 
-# Run installation script (as Administrator)
-.\scripts\setup\install_requirements.ps1
+# First time setup (creates virtual environment, installs dependencies)
+.\setup.bat
 
-# Start the application
+# Normal startup (after first-time setup)
 .\start.bat
+```
+
+### Alternative Startup Methods
+
+#### Direct Python Launch
+```bash
+# Launch directly with Python
+python serverassistant.py
+# OR
+python src/main.py
+```
+
+#### CLI Mode
+```bash
+# Show service status
+python src/main.py --cli status
+
+# Start a specific service
+python src/main.py --cli start web-app
+
+# Start all services
+python src/main.py --cli start-all
+
+# Stop all services
+python src/main.py --cli stop-all
 ```
 
 ## 📚 Documentation
@@ -76,24 +100,43 @@ serverasistant/
 │   ├── setup/              # Setup and installation guides
 │   ├── development/        # Development documentation
 │   └── deployment/         # Deployment and production guides
-├── src/                    # 🐍 Source code
+├── src/                    # 🐍 Source code (organized structure)
 │   ├── core/              # Core application logic
+│   │   ├── server_assistant.py
+│   │   ├── config_manager.py
+│   │   └── docker_manager.py
 │   ├── ui/                # User interface components
+│   │   ├── display_utils.py
+│   │   └── menu_system.py
 │   └── utils/             # Utility functions
+│       ├── file_utils.py
+│       ├── system_utils.py
+│       └── validation_utils.py
 ├── scripts/               # 🔧 Utility scripts
+│   ├── startup/          # Startup and setup scripts
 │   ├── setup/            # Installation and setup scripts
 │   ├── maintenance/      # Maintenance and cleanup scripts
-│   └── testing/          # Testing and validation scripts
+│   ├── testing/          # Testing and validation scripts
+│   ├── backup/           # Backup scripts
+│   ├── windows/          # Windows-specific scripts
+│   └── linux/            # Linux-specific scripts
 ├── docker_services/       # 📦 Docker service definitions
 │   ├── nginx/            # Nginx reverse proxy setup
 │   ├── mysql/            # MySQL database service
 │   ├── gitlab/           # GitLab development platform
-│   └── mail-server/      # Complete email stack
+│   ├── mail-server/      # Complete email stack
+│   ├── portainer/        # Portainer container management
+│   └── web-app/          # Web application template
 ├── tests/                # 🧪 Test suite
 │   ├── unit/             # Unit tests
 │   ├── integration/      # Integration tests
 │   ├── e2e/              # End-to-end tests
 │   └── scripts/          # Test scripts
+├── setup.sh              # 🔧 First-time setup script (Linux)
+├── setup.bat             # 🔧 First-time setup script (Windows)
+├── start.sh              # 🚀 Simple startup script (Linux)
+├── start.bat             # 🚀 Simple startup script (Windows)
+├── serverassistant.py    # 🐍 Direct Python entry point
 └── config.json           # ⚙️ Main configuration file
 ```
 

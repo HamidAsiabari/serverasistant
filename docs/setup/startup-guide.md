@@ -6,30 +6,39 @@ This guide explains how to use the startup scripts to automatically set up and l
 
 ### Linux/macOS
 ```bash
-# Make scripts executable
-chmod +x start.sh start.py run.sh
+# First time setup (creates virtual environment, installs dependencies)
+./setup.sh
 
-# Run startup script
+# Normal startup (after first-time setup)
 ./start.sh
-# OR
-python3 start.py
-# OR (simple launcher)
-./run.sh
 ```
 
 ### Windows
 ```cmd
-# Run startup script
+# First time setup (creates virtual environment, installs dependencies)
+setup.bat
+
+# Normal startup (after first-time setup)
 start.bat
+```
+
+### Alternative Startup Methods
+```bash
+# Direct Python launch
+python serverassistant.py
 # OR
-python start.py
+python src/main.py
+
+# CLI mode
+python src/main.py --cli status
+python src/main.py --cli start web-app
 ```
 
 ## What the Startup Scripts Do
 
-The startup scripts automatically handle:
+### Setup Scripts (`setup.sh` / `setup.bat`)
+The setup scripts automatically handle first-time environment preparation:
 
-### First-Time Setup (Automatic Detection)
 - ✅ Check Python installation (3.7+ required)
 - ✅ **Create Python virtual environment** (handles externally managed environments)
 - ✅ Check Docker installation
@@ -43,14 +52,16 @@ The startup scripts automatically handle:
 - ✅ Generate SSL certificates
 - ✅ Mark setup as complete
 
-### Subsequent Runs
-- ✅ Skip installation steps
+### Startup Scripts (`start.sh` / `start.bat`)
+The startup scripts handle normal application launch:
+
+- ✅ Skip installation steps (if setup is complete)
 - ✅ Activate virtual environment
 - ✅ Launch ServerAssistant directly
 
 ## Virtual Environment Management
 
-The startup scripts automatically handle Python virtual environments to avoid conflicts with system Python packages:
+The setup scripts automatically handle Python virtual environments to avoid conflicts with system Python packages:
 
 ### Automatic Virtual Environment Creation
 - Creates `venv/` directory in project folder
@@ -80,19 +91,21 @@ Before running the startup scripts, ensure you have:
 
 ## Startup Script Options
 
-### 1. Platform-Specific Scripts
-- **`start.sh`** - Linux/macOS shell script with virtual environment support
-- **`start.bat`** - Windows batch script with virtual environment support
+### 1. Setup Scripts (First-Time Setup)
+- **`setup.sh`** - Linux/macOS setup script with virtual environment support
+- **`setup.bat`** - Windows setup script with virtual environment support
 
-### 2. Universal Python Script
-- **`start.py`** - Works on all platforms with virtual environment support
+### 2. Startup Scripts (Normal Launch)
+- **`start.sh`** - Linux/macOS startup script (simple launch)
+- **`start.bat`** - Windows startup script (simple launch)
 
-### 3. Simple Launcher
-- **`run.sh`** - Simple launcher that makes scripts executable and runs startup
+### 3. Direct Python Launch
+- **`serverassistant.py`** - Direct Python entry point
+- **`src/main.py`** - Core application entry point
 
 ## First-Time Setup Process
 
-When you run the startup script for the first time:
+When you run the setup script for the first time:
 
 1. **Prerequisites Check**
    - Verifies Python, Docker, and Docker Compose are installed
@@ -121,6 +134,18 @@ When you run the startup script for the first time:
    - Creates `.first_time_setup_complete` marker file
    - Launches ServerAssistant using virtual environment Python
 
+## Normal Startup Process
+
+After first-time setup, use the startup scripts for quick launch:
+
+1. **Check Setup Status**
+   - Verifies first-time setup is complete
+   - Activates virtual environment
+
+2. **Launch Application**
+   - Starts ServerAssistant directly
+   - No environment setup required
+
 ## Troubleshooting
 
 ### Common Issues
@@ -128,7 +153,7 @@ When you run the startup script for the first time:
 #### Externally Managed Environment Error
 ```bash
 # This is now handled automatically by virtual environments
-# The startup scripts create isolated environments to avoid this error
+# The setup scripts create isolated environments to avoid this error
 ```
 
 #### Python Not Found
@@ -163,7 +188,7 @@ sudo systemctl start docker  # Linux
 ```bash
 # Remove and recreate virtual environment
 rm -rf venv/
-./start.sh  # This will recreate the virtual environment
+./setup.sh  # This will recreate the virtual environment
 ```
 
 ### Reset First-Time Setup
@@ -175,8 +200,8 @@ To force re-run the first-time setup:
 rm .first_time_setup_complete
 rm -rf venv/
 
-# Run startup script again
-./start.sh  # or start.bat or python start.py
+# Run setup script again
+./setup.sh  # or setup.bat
 ```
 
 ### Manual Setup
@@ -199,14 +224,14 @@ If automatic setup fails, you can run steps manually:
 
 3. **Fix Environment**
    ```bash
-   chmod +x fix_line_endings.sh fix_permissions.sh
-   ./fix_line_endings.sh
-   ./fix_permissions.sh
+   chmod +x scripts/maintenance/fix_line_endings.sh scripts/maintenance/fix_permissions.sh
+   ./scripts/maintenance/fix_line_endings.sh
+   ./scripts/maintenance/fix_permissions.sh
    ```
 
 4. **Setup Services**
    ```bash
-   cd example_services/gitlab && ./setup_persistent_storage.sh
+   cd docker_services/gitlab && ./setup_persistent_storage.sh
    cd ../mail-server && ./setup_persistent_storage.sh
    cd ../nginx && ./setup_nginx.sh && ./generate_ssl.sh
    ```
@@ -228,7 +253,7 @@ The startup scripts work with these configuration files:
 
 ### Directory Structure
 ```
-serverimp/
+serverasistant/
 ├── venv/                    # Virtual environment directory
 │   ├── bin/                 # Linux/macOS executables
 │   │   ├── python          # Virtual environment Python
@@ -240,6 +265,7 @@ serverimp/
 │       └── activate.bat    # Activation script
 ├── serverassistant.py      # Main application
 ├── requirements.txt        # Python dependencies
+├── setup.sh               # Setup script
 └── start.sh               # Startup script
 ```
 
@@ -254,9 +280,11 @@ serverimp/
 ### Enable Verbose Output
 ```bash
 # Linux/macOS
+bash -x setup.sh
 bash -x start.sh
 
 # Windows
+cmd /c setup.bat
 cmd /c start.bat
 ```
 
@@ -303,7 +331,7 @@ If you encounter issues:
 
 ## Security Notes
 
-- The startup scripts create persistent storage with appropriate permissions
+- The setup scripts create persistent storage with appropriate permissions
 - SSL certificates are generated for local development
 - For production, replace self-signed certificates with proper ones
 - Review and customize configurations before deployment
