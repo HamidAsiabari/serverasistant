@@ -139,6 +139,19 @@ Options:
 3. Click "Refresh" to load logs
 4. Optionally enable "Follow" for real-time updates
 
+## Testing
+
+### Run GUI Tests
+```bash
+python tests/test_gui.py
+```
+
+This will test:
+- Textual installation
+- Configuration file validity
+- Docker environment availability
+- Module imports
+
 ## Troubleshooting
 
 ### Common Issues
@@ -197,6 +210,9 @@ src/ui/
 ├── simple_textual_app.py      # Main GUI application
 ├── simple_textual_app.tcss    # Styles and themes
 └── textual_app.py            # Full-featured version (advanced)
+tests/
+├── test_gui.py               # GUI testing script
+└── ...                       # Other test files
 ```
 
 ### Adding New Features

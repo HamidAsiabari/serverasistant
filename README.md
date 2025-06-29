@@ -65,6 +65,11 @@ scripts\startup\launch_gui.bat     # Windows
 
 For detailed GUI documentation, see [GUI README](docs/GUI_README.md).
 
+#### Test the GUI Setup
+```bash
+python tests/test_gui.py
+```
+
 ### Alternative Startup Methods
 
 #### Direct Python Launch
