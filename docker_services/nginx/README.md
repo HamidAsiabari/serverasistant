@@ -1,272 +1,695 @@
-# Nginx Reverse Proxy with Domain Configuration
+# Nginx Reverse Proxy with SSL Support
 
-This Nginx setup provides a reverse proxy with custom domains for all services in your Docker environment.
+A comprehensive nginx reverse proxy setup for managing multiple Docker services with SSL/TLS encryption, automatic HTTP to HTTPS redirects, and domain-based routing.
 
-## Domain Configuration
+## 📑 Table of Contents
 
-| Service | Domain | Description |
-|---------|--------|-------------|
-| Web Application | `app.soject.com` | Main Flask web application |
-| Database Admin | `admin.soject.com` | phpMyAdmin for MySQL management |
-| Docker Management | `docker.soject.com` | Portainer for Docker container management |
-| Git Repository | `gitlab.soject.com` | GitLab for source code management |
-| Webmail | `mail.soject.com` | Roundcube webmail interface |
+- [Features](#-features)
+- [Supported Services](#-supported-services)
+- [Quick Start](#-quick-start)
+- [Management Scripts](#-management-scripts)
+- [Domain Configuration](#-domain-configuration)
+- [Configuration Files](#-configuration-files)
+- [SSL/TLS Configuration](#-ssltls-configuration)
+- [Management Commands](#️-management-commands)
+- [Troubleshooting](#-troubleshooting)
+- [Monitoring and Health Checks](#-monitoring-and-health-checks)
+- [Advanced Configuration](#-advanced-configuration)
+- [Updates and Maintenance](#-updates-and-maintenance)
+- [Security Considerations](#-security-considerations)
+- [Additional Resources](#-additional-resources)
 
-## Features
+## 🌟 Features
 
-- **SSL/TLS Support**: HTTPS with modern cipher suites
-- **Security Headers**: HSTS, XSS protection, content type options
-- **Rate Limiting**: Protection against brute force attacks
-- **WebSocket Support**: For real-time applications like Portainer
-- **Large File Uploads**: Optimized for GitLab and file uploads
-- **Health Checks**: Dedicated health check endpoints
-- **Logging**: Comprehensive access and error logging
+- **🔒 SSL/TLS Encryption** - Self-signed certificates for all domains
+- **🔄 Automatic Redirects** - HTTP to HTTPS redirects for all domains
+- **🌐 Domain Routing** - Separate domains for each service
+- **🛡️ Security Headers** - HSTS, XSS protection, and other security headers
+- **⚡ Performance** - Gzip compression, connection pooling, and caching
+- **📊 Rate Limiting** - API endpoint protection
+- **🔍 Health Checks** - Built-in health check endpoints
+- **📱 WebSocket Support** - For real-time applications like Portainer
+- **📝 Comprehensive Logging** - Access and error logs with custom formats
+- **🔧 Easy Management** - Simple scripts for setup and maintenance
+- **🧹 Organized Structure** - Clean, well-organized file structure
 
-## Quick Start
+## 📋 Supported Services
 
-### 1. Generate SSL Certificates
+| Domain | Service | Port | Description | Status |
+|--------|---------|------|-------------|--------|
+| `app.soject.com` | Web Application | 8080 | Main web application | ✅ Active |
+| `admin.soject.com` | phpMyAdmin | 8082 | Database administration | ✅ Active |
+| `docker.soject.com` | Portainer | 9000 | Docker container management | ✅ Active |
+| `gitlab.soject.com` | GitLab | 8081 | Git repository management | ✅ Active |
+| `mail.soject.com` | Roundcube | 8083 | Webmail interface | ✅ Active |
+| `your-server-ip` | Default | 8080 | Default web application | ✅ Active |
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Ubuntu 20.04+ or similar Linux distribution
+- Docker and Docker Compose installed
+- Root or sudo access
+- OpenSSL for certificate generation
+- At least 1GB RAM and 10GB disk space
+
+### 1. Clone and Navigate
 
 ```bash
-cd example_services/nginx
-chmod +x generate_ssl.sh
-./generate_ssl.sh
+cd docker_services/nginx
 ```
 
-### 2. Update Hosts File (Development)
-
-Add these entries to your `/etc/hosts` file (Linux/Mac) or `C:\Windows\System32\drivers\etc\hosts` (Windows):
-
-```
-127.0.0.1 app.soject.com
-127.0.0.1 admin.soject.com
-127.0.0.1 docker.soject.com
-127.0.0.1 gitlab.soject.com
-127.0.0.1 mail.soject.com
-```
-
-### 3. Start Nginx
+### 2. Run Setup Script
 
 ```bash
+sudo ./setup_nginx.sh
+```
+
+This comprehensive script will:
+- Install required packages
+- Generate SSL certificates
+- Set proper permissions
+- Verify configuration files
+- Start nginx services
+- Test connectivity
+
+### 3. Verify Installation
+
+```bash
+./manage_nginx.sh health
+```
+
+## 🛠️ Management Scripts
+
+The nginx setup includes several management scripts for easy operation:
+
+### Main Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `setup_nginx.sh` | Initial setup and installation | `sudo ./setup_nginx.sh` |
+| `manage_nginx.sh` | Daily management operations | `./manage_nginx.sh [command]` |
+| `generate_ssl.sh` | SSL certificate generation | `./generate_ssl.sh` |
+| `cleanup_old_configs.sh` | Clean up old configurations | `./cleanup_old_configs.sh` |
+| `organize_nginx.sh` | Organize folder structure | `./organize_nginx.sh` |
+
+### Management Commands
+
+```bash
+# Start nginx
+./manage_nginx.sh start
+
+# Stop nginx
+./manage_nginx.sh stop
+
+# Restart nginx
+./manage_nginx.sh restart
+
+# Check status
+./manage_nginx.sh status
+
+# View logs
+./manage_nginx.sh logs
+
+# Test configuration
+./manage_nginx.sh test
+
+# Regenerate SSL certificates
+./manage_nginx.sh ssl
+
+# Health check
+./manage_nginx.sh health
+
+# Backup configuration
+./manage_nginx.sh backup
+
+# Clean up old files
+./manage_nginx.sh cleanup
+
+# Show help
+./manage_nginx.sh help
+```
+
+### Windows Support
+
+For Windows users, there's also a batch file:
+- `setup_nginx.bat` - Windows setup script
+
+## 🌐 Domain Configuration
+
+### Local Development
+
+Add these entries to your hosts file:
+
+**Linux/Mac:**
+```bash
+sudo nano /etc/hosts
+```
+
+**Windows:**
+```
+C:\Windows\System32\drivers\etc\hosts
+```
+
+Add this line:
+```
+YOUR_SERVER_IP app.soject.com admin.soject.com docker.soject.com gitlab.soject.com mail.soject.com
+```
+
+### Production DNS
+
+For production, configure your DNS provider to point these domains to your server:
+- `app.soject.com` → `YOUR_SERVER_IP`
+- `admin.soject.com` → `YOUR_SERVER_IP`
+- `docker.soject.com` → `YOUR_SERVER_IP`
+- `gitlab.soject.com` → `YOUR_SERVER_IP`
+- `mail.soject.com` → `YOUR_SERVER_IP`
+
+### DNS Propagation
+
+After updating DNS records, allow 24-48 hours for full propagation:
+```bash
+# Check DNS propagation
+dig app.soject.com
+nslookup app.soject.com
+```
+
+## 🔧 Configuration Files
+
+### Main Configuration
+- `config/nginx.conf` - Main nginx configuration with upstream definitions
+- `docker-compose.yml` - Docker Compose configuration
+- `generate_ssl.sh` - SSL certificate generation script
+- `setup_nginx.sh` - Complete setup script
+
+### Domain Configurations
+- `config/conf.d/default.conf` - Default server (handles server IP requests)
+- `config/conf.d/app.soject.com.conf` - Web application
+- `config/conf.d/admin.soject.com.conf` - phpMyAdmin
+- `config/conf.d/docker.soject.com.conf` - Portainer
+- `config/conf.d/gitlab.soject.com.conf` - GitLab
+- `config/conf.d/mail.soject.com.conf` - Roundcube mail
+
+### SSL Certificates
+- `ssl/` - Directory containing all SSL certificates and keys
+
+### Management Scripts
+- `manage_nginx.sh` - Main management script
+- `cleanup_old_configs.sh` - Cleanup utility
+- `organize_nginx.sh` - Organization utility
+
+## 🔒 SSL/TLS Configuration
+
+### Self-Signed Certificates (Development)
+
+The setup includes self-signed certificates for development and testing. These provide encryption but will show browser warnings.
+
+**Browser Warnings**: Accept the security risk in your browser to proceed with self-signed certificates.
+
+### Production Certificates
+
+For production, replace self-signed certificates with real certificates:
+
+1. **Let's Encrypt (Recommended)**
+   ```bash
+   # Install certbot
+   sudo apt update
+   sudo apt install certbot
+   
+   # Stop nginx temporarily
+   ./manage_nginx.sh stop
+   
+   # Generate certificates
+   sudo certbot certonly --standalone -d app.soject.com
+   sudo certbot certonly --standalone -d admin.soject.com
+   sudo certbot certonly --standalone -d docker.soject.com
+   sudo certbot certonly --standalone -d gitlab.soject.com
+   sudo certbot certonly --standalone -d mail.soject.com
+   
+   # Copy certificates
+   sudo cp /etc/letsencrypt/live/app.soject.com/fullchain.pem ssl/app.soject.com.crt
+   sudo cp /etc/letsencrypt/live/app.soject.com/privkey.pem ssl/app.soject.com.key
+   # Repeat for other domains...
+   
+   # Set permissions
+   chmod 600 ssl/*.key
+   chmod 644 ssl/*.crt
+   
+   # Restart nginx
+   ./manage_nginx.sh start
+   ```
+
+2. **Commercial Certificates**
+   - Purchase certificates from a trusted CA
+   - Place `.crt` and `.key` files in the `ssl/` directory
+   - Update file names to match the configuration
+
+### Certificate Renewal
+
+For Let's Encrypt certificates, set up automatic renewal:
+```bash
+# Test renewal
+sudo certbot renew --dry-run
+
+# Add to crontab for automatic renewal
+sudo crontab -e
+# Add: 0 12 * * * /usr/bin/certbot renew --quiet
+```
+
+## 🛠️ Management Commands
+
+### Using Management Script (Recommended)
+
+```bash
+# Start services
+./manage_nginx.sh start
+
+# Stop services
+./manage_nginx.sh stop
+
+# Restart services
+./manage_nginx.sh restart
+
+# View logs
+./manage_nginx.sh logs
+
+# Check status
+./manage_nginx.sh status
+
+# Test configuration
+./manage_nginx.sh test
+```
+
+### Manual Docker Commands
+
+```bash
+# Start services
 docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# Restart services
+docker-compose restart
+
+# View logs
+docker-compose logs
+
+# Follow logs
+docker-compose logs -f
+
+# Specific service logs
+docker logs nginx-proxy
+
+# Last 100 lines
+docker logs --tail 100 nginx-proxy
+
+# Check status
+docker-compose ps
+docker ps | grep nginx
+
+# Test configuration
+docker exec nginx-proxy nginx -t
+
+# Test SSL certificates
+openssl s_client -connect app.soject.com:443 -servername app.soject.com
+
+# Test HTTP to HTTPS redirect
+curl -I http://app.soject.com
 ```
 
-## Configuration Details
+## 🔍 Troubleshooting
 
-### SSL/TLS Configuration
-
-- **Protocols**: TLSv1.2 and TLSv1.3 only
-- **Ciphers**: Modern, secure cipher suites
-- **Session Cache**: 10-minute session timeout
-- **HSTS**: Strict Transport Security enabled
-
-### Security Features
-
-- **Rate Limiting**: 
-  - Login endpoints: 10 requests per minute
-  - API endpoints: 30 requests per minute
-- **Security Headers**: X-Frame-Options, XSS Protection, Content Type Options
-- **File Access Control**: Blocks access to sensitive files
-
-### Performance Optimizations
-
-- **Gzip Compression**: Enabled for text-based content
-- **Connection Pooling**: Optimized worker connections
-- **Timeouts**: Configured for different service requirements
-- **Client Body Size**: 100MB default, 500MB for GitLab
-
-## Service-Specific Configurations
-
-### Web Application (`app.soject.com`)
-- WebSocket support for real-time features
-- API rate limiting
-- Health check endpoint
-
-### phpMyAdmin (`admin.soject.com`)
-- Enhanced login rate limiting
-- Sensitive file access blocking
-- Database management interface
-
-### Portainer (`docker.soject.com`)
-- WebSocket support for container management
-- API rate limiting
-- Docker socket access
-
-### GitLab (`gitlab.soject.com`)
-- Large file upload support (500MB)
-- Extended timeouts for Git operations
-- Git protocol support
-- Repository access patterns
-
-### Roundcube (`mail.soject.com`)
-- Email web interface
-- Login rate limiting
-- Secure file access
-
-## Production Deployment
-
-### 1. Replace Self-Signed Certificates
-
-For production, replace self-signed certificates with trusted certificates:
+### Quick Diagnostics
 
 ```bash
-# Using Let's Encrypt with Certbot
-certbot certonly --webroot -w /var/www/html -d app.soject.com
-certbot certonly --webroot -w /var/www/html -d admin.soject.com
-# ... repeat for all domains
+# Comprehensive health check
+./manage_nginx.sh health
+
+# Check logs
+./manage_nginx.sh logs-tail
+
+# Test configuration
+./manage_nginx.sh test
 ```
-
-### 2. Update Certificate Paths
-
-Update the SSL certificate paths in each domain configuration file:
-
-```nginx
-ssl_certificate /etc/letsencrypt/live/app.soject.com/fullchain.pem;
-ssl_certificate_key /etc/letsencrypt/live/app.soject.com/privkey.pem;
-```
-
-### 3. DNS Configuration
-
-Configure your DNS provider to point domains to your server's IP address:
-
-```
-A    app.soject.com    YOUR_SERVER_IP
-A    admin.soject.com  YOUR_SERVER_IP
-A    docker.soject.com YOUR_SERVER_IP
-A    gitlab.soject.com YOUR_SERVER_IP
-A    mail.soject.com   YOUR_SERVER_IP
-```
-
-### 4. Firewall Configuration
-
-Ensure ports 80 and 443 are open:
-
-```bash
-# UFW (Ubuntu)
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-
-# iptables
-sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-```
-
-## Monitoring and Logs
-
-### Access Logs
-- Location: `/var/log/nginx/access.log`
-- Format: Combined log format with X-Forwarded-For
-
-### Error Logs
-- Location: `/var/log/nginx/error.log`
-- Level: Warning and above
-
-### Log Rotation
-Configure log rotation in `/etc/logrotate.d/nginx`:
-
-```
-/var/log/nginx/*.log {
-    daily
-    missingok
-    rotate 52
-    compress
-    delaycompress
-    notifempty
-    create 640 nginx nginx
-    postrotate
-        [ -f /var/run/nginx.pid ] && kill -USR1 `cat /var/run/nginx.pid`
-    endscript
-}
-```
-
-## Troubleshooting
 
 ### Common Issues
 
-1. **SSL Certificate Errors**
-   - Ensure certificates are in the correct location
-   - Check certificate permissions (readable by nginx)
-   - Verify certificate validity dates
+1. **Port Already in Use**
+   ```bash
+   # Check what's using port 80/443
+   sudo netstat -tlnp | grep :80
+   sudo netstat -tlnp | grep :443
+   sudo lsof -i :80
+   sudo lsof -i :443
+   
+   # Stop conflicting services
+   sudo systemctl stop apache2  # or nginx, or other web servers
+   sudo systemctl disable apache2  # prevent auto-start
+   ```
 
-2. **Connection Refused**
-   - Check if backend services are running
-   - Verify network connectivity between containers
-   - Check Docker network configuration
+2. **SSL Certificate Errors**
+   ```bash
+   # Regenerate certificates
+   ./manage_nginx.sh ssl
+   
+   # Check certificate validity
+   openssl x509 -in ssl/app.soject.com.crt -text -noout
+   
+   # Check certificate dates
+   openssl x509 -in ssl/app.soject.com.crt -noout -dates
+   ```
 
-3. **Rate Limiting Issues**
-   - Adjust rate limiting zones in nginx.conf
-   - Check client IP forwarding configuration
+3. **Domain Not Resolving**
+   ```bash
+   # Check DNS resolution
+   nslookup app.soject.com
+   dig app.soject.com
+   
+   # Check hosts file
+   cat /etc/hosts | grep soject
+   
+   # Test with curl
+   curl -v https://app.soject.com
+   ```
 
-4. **Large File Upload Failures**
-   - Increase `client_max_body_size` in domain configs
-   - Check backend service upload limits
+4. **Service Not Accessible**
+   ```bash
+   # Check if backend services are running
+   docker ps | grep web-app
+   docker ps | grep phpmyadmin
+   docker ps | grep portainer
+   
+   # Test direct access
+   curl http://localhost:8080
+   curl http://localhost:8082
+   curl http://localhost:9000
+   
+   # Check service logs
+   docker logs web-app
+   docker logs phpmyadmin
+   ```
 
-### Debug Commands
+5. **Nginx Configuration Errors**
+   ```bash
+   # Test configuration syntax
+   ./manage_nginx.sh test
+   
+   # Check nginx error log
+   docker exec nginx-proxy tail -f /var/log/nginx/error.log
+   
+   # Reload configuration
+   docker exec nginx-proxy nginx -s reload
+   ```
+
+6. **Permission Issues**
+   ```bash
+   # Fix SSL certificate permissions
+   chmod 600 ssl/*.key
+   chmod 644 ssl/*.crt
+   
+   # Fix nginx log permissions
+   sudo chown -R 101:101 logs/
+   ```
+
+### Log Analysis
 
 ```bash
-# Check Nginx configuration
-docker exec nginx-proxy nginx -t
+# Access logs
+docker exec nginx-proxy tail -f /var/log/nginx/access.log
 
-# View Nginx logs
-docker logs nginx-proxy
+# Error logs
+docker exec nginx-proxy tail -f /var/log/nginx/error.log
 
-# Test domain resolution
-curl -I https://app.soject.com
+# Real-time monitoring
+docker exec nginx-proxy tail -f /var/log/nginx/*.log
 
-# Check SSL certificate
-openssl s_client -connect app.soject.com:443 -servername app.soject.com
+# Search for specific errors
+docker exec nginx-proxy grep -i error /var/log/nginx/error.log
 ```
 
-## Customization
+### Network Diagnostics
 
-### Adding New Domains
+```bash
+# Check if ports are listening
+netstat -tlnp | grep nginx
+docker exec nginx-proxy netstat -tlnp
 
-1. Create a new configuration file in `config/conf.d/`
-2. Generate SSL certificate for the domain
-3. Update the main nginx.conf with upstream definition
-4. Restart Nginx container
+# Test connectivity
+telnet localhost 80
+telnet localhost 443
 
-### Modifying Rate Limits
+# Check firewall
+sudo ufw status
+sudo iptables -L
+```
 
-Edit the rate limiting zones in `nginx.conf`:
+## 📊 Monitoring and Health Checks
+
+### Health Check Endpoints
+
+Each service has a health check endpoint:
+- `https://app.soject.com/health`
+- `https://admin.soject.com/`
+- `https://docker.soject.com/`
+- `https://gitlab.soject.com/help`
+- `https://mail.soject.com/`
+
+### Performance Monitoring
+
+```bash
+# Check nginx status
+docker exec nginx-proxy nginx -V
+
+# Monitor resource usage
+docker stats nginx-proxy
+
+# Check SSL certificate expiration
+openssl x509 -in ssl/app.soject.com.crt -noout -dates
+
+# Monitor connections
+docker exec nginx-proxy ss -tuln
+```
+
+### Automated Health Checks
+
+```bash
+# Use the built-in health check
+./manage_nginx.sh health
+
+# Or create a custom health check script
+cat > health_check.sh << 'EOF'
+#!/bin/bash
+domains=("app.soject.com" "admin.soject.com" "docker.soject.com" "gitlab.soject.com" "mail.soject.com")
+for domain in "${domains[@]}"; do
+    if curl -f -s -k "https://$domain" > /dev/null; then
+        echo "✅ $domain is accessible"
+    else
+        echo "❌ $domain is not accessible"
+    fi
+done
+EOF
+
+chmod +x health_check.sh
+./health_check.sh
+```
+
+## 🔧 Advanced Configuration
+
+### Custom Upstream Servers
+
+Edit `config/nginx.conf` to modify upstream definitions:
 
 ```nginx
-limit_req_zone $binary_remote_addr zone=custom:10m rate=20r/m;
+upstream web_app {
+    server 127.0.0.1:8080;
+    # Add more servers for load balancing
+    # server 127.0.0.1:8081;
+    # server 127.0.0.1:8082;
+}
 ```
 
-### Custom Security Headers
+### Rate Limiting
+
+Modify rate limiting in `config/nginx.conf`:
+
+```nginx
+# Increase rate limits
+limit_req_zone $binary_remote_addr zone=api:10m rate=100r/m;
+
+# Add to server blocks
+limit_req zone=api burst=20 nodelay;
+```
+
+### Custom Headers
 
 Add custom headers in domain configurations:
 
 ```nginx
-add_header Custom-Header "value" always;
+add_header X-Custom-Header "value" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
 ```
 
-## Integration with Docker Manager
+### Load Balancing
 
-The Nginx service is integrated with the Docker Manager system:
+Configure multiple backend servers:
 
-- **Service Name**: `nginx`
-- **Ports**: 80, 443
-- **Dependencies**: All other services
-- **Networks**: Connected to all service networks
-
-Update your `config.json` to include Nginx:
-
-```json
-{
-  "services": {
-    "nginx": {
-      "enabled": true,
-      "domain": "nginx.example.com"
-    }
-  }
+```nginx
+upstream web_app {
+    server 127.0.0.1:8080 weight=3;
+    server 127.0.0.1:8081 weight=2;
+    server 127.0.0.1:8082 weight=1;
 }
 ```
 
-## Next Steps
+## 🔄 Updates and Maintenance
 
-1. **Load Balancing**: Add multiple backend instances
-2. **Caching**: Implement Redis-based caching
-3. **CDN Integration**: Configure CDN for static assets
-4. **Monitoring**: Add Prometheus/Grafana monitoring
-5. **Backup**: Implement SSL certificate backup strategy 
+### Update Nginx
+
+```bash
+# Pull latest nginx image
+docker-compose pull
+
+# Restart with new image
+docker-compose up -d
+
+# Verify update
+docker exec nginx-proxy nginx -v
+```
+
+### Renew SSL Certificates
+
+```bash
+# For Let's Encrypt certificates
+sudo certbot renew
+
+# Copy renewed certificates
+sudo cp /etc/letsencrypt/live/app.soject.com/fullchain.pem ssl/app.soject.com.crt
+sudo cp /etc/letsencrypt/live/app.soject.com/privkey.pem ssl/app.soject.com.key
+
+# Set permissions
+chmod 600 ssl/*.key
+chmod 644 ssl/*.crt
+
+# Restart nginx
+./manage_nginx.sh restart
+```
+
+### Backup Configuration
+
+```bash
+# Use the built-in backup command
+./manage_nginx.sh backup
+
+# Or create manual backup
+tar -czf nginx-backup-$(date +%Y%m%d).tar.gz config/ ssl/ docker-compose.yml
+
+# Restore from backup
+tar -xzf nginx-backup-20231201.tar.gz
+```
+
+### Log Rotation
+
+```bash
+# Create log rotation configuration
+sudo tee /etc/logrotate.d/nginx-docker << EOF
+/var/lib/docker/containers/*/logs/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+}
+EOF
+```
+
+## 🛡️ Security Considerations
+
+### SSL/TLS Security
+
+- Use strong cipher suites
+- Enable HSTS headers
+- Regular certificate renewal
+- Monitor certificate expiration
+
+### Access Control
+
+```bash
+# Restrict access to admin interfaces
+# Add to nginx configuration
+allow 192.168.1.0/24;
+deny all;
+```
+
+### Rate Limiting
+
+```bash
+# Configure rate limiting for API endpoints
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+```
+
+### Security Headers
+
+```nginx
+# Add security headers
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+```
+
+### Firewall Configuration
+
+```bash
+# Configure UFW firewall
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw deny 22/tcp  # If using key-based SSH
+```
+
+## 📚 Additional Resources
+
+- [Nginx Documentation](https://nginx.org/en/docs/)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
+- [SSL/TLS Best Practices](https://ssl-config.mozilla.org/)
+- [Nginx Security Headers](https://securityheaders.com/)
+- [Docker Security Best Practices](https://docs.docker.com/engine/security/)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the troubleshooting section
+2. Review the logs
+3. Create an issue with detailed information
+4. Include relevant log output and error messages
+
+### Getting Help
+
+- **Documentation**: Check this README and inline comments
+- **Logs**: Use `./manage_nginx.sh logs` for detailed error information
+- **Health Check**: Use `./manage_nginx.sh health` for diagnostics
+- **Community**: Create an issue with detailed problem description
+- **Debugging**: Use the troubleshooting commands provided above
+
+---
+
+**Note**: This setup is designed for development and testing environments. For production use, ensure proper security measures, use real SSL certificates, and follow security best practices.
+
+**⚠️ Security Warning**: Self-signed certificates are for development only. Always use trusted certificates in production environments. 
