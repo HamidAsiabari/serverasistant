@@ -17,7 +17,9 @@ A comprehensive Python application for managing and running Docker services base
 git clone <repository-url>
 cd serverasistant
 
-in server if change happened in code: git reset --hard HEAD~1
+in server if change happened in code: 
+git reset --hard HEAD~1
+git pull
 
 chmod +x setup.sh
 chmod +x scripts/startup/setup.sh
