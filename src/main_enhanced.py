@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.server_assistant import ServerAssistant
 from src.ui.display_utils import DisplayUtils
-from src.ui.menu_system import SimpleEnhancedMenuSystem
+from src.ui.menu_system import RealTimeEnhancedMenuSystem
 
 
 def print_banner():
@@ -135,7 +135,7 @@ Examples:
             print()
             
             # Create enhanced menu system
-            menu_system = SimpleEnhancedMenuSystem()
+            menu_system = RealTimeEnhancedMenuSystem()
             
             # Add initial log messages
             menu_system.log_action("🚀 ServerAssistant Enhanced started", "INFO")

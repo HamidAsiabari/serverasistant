@@ -201,6 +201,181 @@ class SimpleSplitScreenDisplay:
         print(separator)
 
 
+class RealTimeLogPanel:
+    """Real-time log panel for the right side of the screen"""
+    
+    def __init__(self, max_lines: int = 20):
+        self.max_lines = max_lines
+        self.log_lines = []
+        self.lock = threading.Lock()
+        self.terminal_width = self._get_terminal_width()
+        self.menu_width = int(self.terminal_width * 0.6)  # 60% for menu
+        self.log_width = self.terminal_width - self.menu_width - 3  # 3 for separator
+        
+    def _get_terminal_width(self) -> int:
+        """Get terminal width"""
+        try:
+            size = os.get_terminal_size()
+            return size.columns
+        except:
+            return 120  # Default width
+            
+    def add_log(self, message: str, level: str = "INFO"):
+        """Add a log message"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        log_entry = f"[{timestamp}] {level}: {message}"
+        
+        with self.lock:
+            self.log_lines.append(log_entry)
+            # Keep only the last max_lines
+            if len(self.log_lines) > self.max_lines:
+                self.log_lines = self.log_lines[-self.max_lines:]
+                
+    def get_logs(self) -> List[str]:
+        """Get current log lines"""
+        with self.lock:
+            return self.log_lines.copy()
+            
+    def clear(self):
+        """Clear all logs"""
+        with self.lock:
+            self.log_lines.clear()
+            
+    def get_log_display_lines(self) -> List[str]:
+        """Get formatted log lines for display"""
+        logs = self.get_logs()
+        if not logs:
+            return ["[No logs available]"]
+            
+        # Format logs to fit the log width
+        formatted_logs = []
+        for log in logs:
+            if len(log) > self.log_width:
+                # Split long logs into multiple lines
+                words = log.split()
+                current_line = ""
+                for word in words:
+                    if len(current_line + " " + word) <= self.log_width:
+                        current_line += (" " + word) if current_line else word
+                    else:
+                        if current_line:
+                            formatted_logs.append(current_line)
+                        current_line = word
+                if current_line:
+                    formatted_logs.append(current_line)
+            else:
+                formatted_logs.append(log)
+                
+        return formatted_logs
+
+
+class SplitScreenDisplay:
+    """Split-screen display with persistent right-side log panel"""
+    
+    def __init__(self, log_panel: RealTimeLogPanel):
+        self.log_panel = log_panel
+        self.terminal_width = log_panel.terminal_width
+        self.menu_width = log_panel.menu_width
+        self.log_width = log_panel.log_width
+        
+    def clear_screen(self):
+        """Clear the terminal screen"""
+        os.system('cls' if os.name == 'nt' else 'clear')
+        
+    def print_banner(self):
+        """Print application banner"""
+        banner = f"""
+╔══════════════════════════════════════════════════════════════╗
+║                    ServerAssistant v1.0.0                    ║
+║              Terminal-based Server Management                 ║
+╚══════════════════════════════════════════════════════════════╝
+"""
+        print(banner)
+        
+    def print_header(self, text: str):
+        """Print header with decoration"""
+        print("\n" + "="*60)
+        print(f"  {text}")
+        print("="*60)
+        
+    def print_split_screen(self, menu_content: str, title: str = ""):
+        """Print split screen with menu on left and logs on right"""
+        # Clear screen
+        self.clear_screen()
+        
+        # Print banner
+        self.print_banner()
+        
+        # Print title
+        if title:
+            self.print_header(title)
+            
+        # Split menu content into lines
+        menu_lines = menu_content.split('\n')
+        
+        # Get log lines
+        log_lines = self.log_panel.get_log_display_lines()
+        
+        # Calculate how many lines to display
+        max_lines = max(len(menu_lines), len(log_lines), 15)  # At least 15 lines
+        
+        # Print separator line
+        separator = "─" * self.terminal_width
+        print(separator)
+        
+        # Print content
+        for i in range(max_lines):
+            # Menu side
+            menu_line = menu_lines[i] if i < len(menu_lines) else ""
+            if len(menu_line) > self.menu_width:
+                menu_line = menu_line[:self.menu_width-3] + "..."
+            menu_padded = menu_line.ljust(self.menu_width)
+            
+            # Log side
+            log_line = log_lines[i] if i < len(log_lines) else ""
+            if len(log_line) > self.log_width:
+                log_line = log_line[:self.log_width-3] + "..."
+            log_padded = log_line.ljust(self.log_width)
+            
+            # Print the line
+            print(f"{menu_padded} │ {log_padded}")
+            
+        # Print bottom separator
+        print(separator)
+        
+    def print_menu_with_logs(self, title: str, menu_items: List[Dict[str, str]], 
+                           current_selection: str = ""):
+        """Print menu with real-time logs"""
+        # Build menu content
+        menu_content = f"\n{title}\n"
+        menu_content += "─" * (self.menu_width - 2) + "\n\n"
+        
+        for item in menu_items:
+            key = item.get('key', '0')
+            label = item.get('label', 'Unknown')
+            description = item.get('description', '')
+            
+            # Highlight current selection
+            if key == current_selection:
+                menu_content += f"▶ {key}. {label}\n"
+            else:
+                menu_content += f"  {key}. {label}\n"
+                
+            if description:
+                # Truncate description if too long
+                desc = description
+                if len(desc) > self.menu_width - 8:  # Leave space for indentation
+                    desc = desc[:self.menu_width-11] + "..."
+                menu_content += f"     {desc}\n"
+            menu_content += "\n"
+            
+        # Add navigation info
+        menu_content += "─" * (self.menu_width - 2) + "\n"
+        menu_content += "Use number keys to select, 0 to go back\n"
+        
+        self.print_split_screen(menu_content, title)
+
+
 class DisplayUtils:
     """Utility class for consistent display formatting"""
     
