@@ -2,6 +2,8 @@
 
 A comprehensive Python application for managing and running Docker services based on JSON configuration. This tool allows you to easily deploy, monitor, and manage Docker containers and Docker Compose services across different servers.
 
+![Capture](https://github.com/user-attachments/assets/0fe44735-09fb-4ca4-bc74-28b9688cbd62)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
