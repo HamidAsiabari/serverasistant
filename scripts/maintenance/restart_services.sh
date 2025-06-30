@@ -91,13 +91,6 @@ cd example_services/mail-server
 docker-compose up -d
 cd "$SCRIPT_DIR"
 
-# 6. Start Nginx last
-print_status "Starting Nginx..."
-cd example_services/nginx
-chmod +x setup_nginx_robust.sh
-./setup_nginx_robust.sh
-cd "$SCRIPT_DIR"
-
 # Wait for services to be ready
 print_status "Waiting for services to be ready..."
 sleep 10

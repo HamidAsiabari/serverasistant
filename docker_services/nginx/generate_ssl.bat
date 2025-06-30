@@ -1,29 +1,29 @@
 @echo off
-REM Generate SSL certificates for nginx domains
-REM This script creates self-signed certificates for development purposes
+echo 🔐 Generating self-signed SSL certificate for app.soject.com...
 
-set SSL_DIR=.\ssl
-set DOMAINS=default app.soject.com gitlab.soject.com docker.soject.com admin.soject.com mail.soject.com
+REM Create ssl directory if it doesn't exist
+if not exist "ssl" mkdir ssl
 
-REM Create SSL directory if it doesn't exist
-if not exist "%SSL_DIR%" mkdir "%SSL_DIR%"
+REM Generate self-signed certificate
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 ^
+    -keyout ssl\app.soject.com.key ^
+    -out ssl\app.soject.com.crt ^
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=app.soject.com"
 
-REM Generate certificates for each domain
-for %%d in (%DOMAINS%) do (
-    echo Generating SSL certificate for %%d...
-    
-    if "%%d"=="default" (
-        REM Default certificate for unknown domains
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "%SSL_DIR%\default.key" -out "%SSL_DIR%\default.crt" -subj "/C=US/ST=State/L=City/O=Organization/CN=default"
-    ) else (
-        REM Domain-specific certificates
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "%SSL_DIR%\%%d.key" -out "%SSL_DIR%\%%d.crt" -subj "/C=US/ST=State/L=City/O=Organization/CN=%%d"
-    )
-    
-    echo Certificate for %%d created successfully
+if %ERRORLEVEL% EQU 0 (
+    echo ✅ SSL certificate generated successfully!
+    echo 📁 Certificate files:
+    echo    - ssl\app.soject.com.crt
+    echo    - ssl\app.soject.com.key
+    echo.
+    echo ⚠️  Note: This is a self-signed certificate for development only.
+    echo    For production, use Let's Encrypt or a commercial certificate.
+    echo.
+    echo 🔍 To verify the certificate:
+    echo    openssl x509 -in ssl\app.soject.com.crt -text -noout
+) else (
+    echo ❌ Failed to generate SSL certificate
+    echo Please ensure OpenSSL is installed and available in your PATH
 )
 
-echo All SSL certificates generated successfully!
-echo Note: These are self-signed certificates for development use only.
-echo For production, use proper SSL certificates from a trusted CA.
 pause 

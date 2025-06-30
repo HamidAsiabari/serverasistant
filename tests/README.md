@@ -15,7 +15,7 @@ tests/
 │   ├── test_startup.py         # Startup and initialization tests
 │   └── test_services.py        # Service connectivity tests
 ├── e2e/                         # 🌐 End-to-end tests
-│   └── test_nginx_setup.py     # Complete nginx setup tests
+│   └── test_services_setup.py  # Complete services setup tests
 ├── config/                      # ⚙️ Test configuration files
 │   └── test_config_ubuntu22.json # Ubuntu 22.04 test configuration
 └── scripts/                     # 🔧 Test scripts
@@ -64,7 +64,7 @@ python -m pytest tests/integration/test_services.py
 Complete system tests that verify the entire application workflow.
 
 **Files:**
-- `test_nginx_setup.py` - Complete nginx reverse proxy setup and validation
+- `test_services_setup.py` - Complete services setup tests
 
 **Run with:**
 ```bash
@@ -72,7 +72,7 @@ Complete system tests that verify the entire application workflow.
 python -m pytest tests/e2e/
 
 # Run specific test file
-python -m pytest tests/e2e/test_nginx_setup.py
+python -m pytest tests/e2e/test_services_setup.py
 ```
 
 ### Test Scripts (`scripts/`)

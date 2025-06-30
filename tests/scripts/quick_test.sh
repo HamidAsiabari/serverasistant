@@ -44,13 +44,6 @@ fi
 # Test local access
 print_status "Testing local access..."
 
-# Test Nginx
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:80 | grep -q "200"; then
-    print_success "Nginx (port 80): OK"
-else
-    print_warning "Nginx (port 80): FAILED"
-fi
-
 # Test Web App
 if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 | grep -q "200\|301\|302"; then
     print_success "Web App (port 8080): OK"

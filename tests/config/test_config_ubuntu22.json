@@ -5,32 +5,6 @@
   "platform": "linux",
   "services": [
     {
-      "name": "nginx",
-      "type": "docker-compose",
-      "enabled": true,
-      "path": "./docker_services/nginx",
-      "description": "Nginx reverse proxy with SSL/TLS support",
-      "ports": [80, 443],
-      "domains": [
-        "app.soject.com",
-        "admin.soject.com",
-        "docker.soject.com",
-        "gitlab.soject.com",
-        "mail.soject.com"
-      ],
-      "health_check": {
-        "url": "http://localhost/health",
-        "interval": 30,
-        "timeout": 10,
-        "retries": 3
-      },
-      "backup": {
-        "enabled": true,
-        "schedule": "0 2 * * *",
-        "retention_days": 30
-      }
-    },
-    {
       "name": "web-app",
       "type": "docker-compose",
       "enabled": true,

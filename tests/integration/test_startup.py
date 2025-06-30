@@ -102,7 +102,6 @@ def test_service_directories():
     print("Testing service directories...")
     
     service_dirs = [
-        "docker_services/nginx",
         "docker_services/web-app",
         "docker_services/mysql",
         "docker_services/database",

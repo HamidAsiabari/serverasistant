@@ -21,7 +21,6 @@ For comprehensive documentation, guides, and tutorials, please visit our **[Docu
 - **JSON Configuration**: Define services in a simple JSON configuration file
 - **Docker Support**: Run individual Docker containers from Dockerfiles
 - **Docker Compose Support**: Manage multi-service applications with Docker Compose
-- **Nginx Reverse Proxy**: Professional domain-based routing with SSL/TLS support
 - **Health Monitoring**: Built-in health checks and monitoring
 - **Cross-Server Compatibility**: Use the same configuration across different servers
 - **Cross-Platform Support**: Works on Linux Ubuntu and Windows servers
@@ -43,70 +42,6 @@ For comprehensive documentation, guides, and tutorials, please visit our **[Docu
 | **Portainer** | Management | Docker container management UI | 9000 | `docker.soject.com` |
 | **GitLab** | Development | Git repository and CI/CD platform | 8081 | `gitlab.soject.com` |
 | **Mail Server** | Communication | Complete email stack with webmail | 25, 587, 993 | `mail.soject.com` |
-| **Nginx** | Reverse Proxy | Domain-based routing with SSL/TLS | 80, 443 | All domains |
-
-### Nginx Reverse Proxy
-
-The Nginx reverse proxy provides professional domain-based routing for all services:
-
-#### Domain Configuration
-- **Web App**: `https://app.soject.com` - Main Flask application
-- **Database Admin**: `https://admin.soject.com` - phpMyAdmin interface
-- **Docker Management**: `https://docker.soject.com` - Portainer UI
-- **Git Repository**: `https://gitlab.soject.com` - GitLab platform
-- **Webmail**: `https://mail.soject.com` - Roundcube email interface
-
-#### Features
-- **SSL/TLS Support**: HTTPS with modern cipher suites
-- **Security Headers**: HSTS, XSS protection, content type options
-- **Rate Limiting**: Protection against brute force attacks
-- **WebSocket Support**: For real-time applications
-- **Large File Uploads**: Optimized for GitLab and file uploads
-- **Health Checks**: Dedicated health check endpoints
-- **Logging**: Comprehensive access and error logging
-
-#### Quick Setup
-
-1. **Generate SSL Certificates:**
-```bash
-cd example_services/nginx
-chmod +x setup_nginx.sh
-./setup_nginx.sh
-```
-
-2. **Add Domains to Hosts File:**
-```bash
-# Linux/Mac
-sudo ./add_to_hosts.sh
-
-# Windows (Run as Administrator)
-add_to_hosts.bat
-```
-
-3. **Start Nginx:**
-```bash
-./start_nginx.sh
-```
-
-4. **Access Services:**
-- Web App: https://app.soject.com
-- Database Admin: https://admin.soject.com
-- Docker Management: https://docker.soject.com
-- GitLab: https://gitlab.soject.com
-- Webmail: https://mail.soject.com
-
-#### Production Deployment
-
-For production use, replace self-signed certificates with trusted certificates:
-
-```bash
-# Using Let's Encrypt
-certbot certonly --webroot -w /var/www/html -d app.soject.com
-certbot certonly --webroot -w /var/www/html -d admin.soject.com
-# ... repeat for all domains
-```
-
-Update certificate paths in domain configuration files and configure DNS records to point to your server IP.
 
 ## Installation
 

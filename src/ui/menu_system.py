@@ -170,23 +170,19 @@ class MenuSystem:
                           lambda: self._install_dependencies(server_assistant),
                           "Install system dependencies")
                           
-        self.add_menu_item("setup", "2", "Setup Nginx",
-                          lambda: self._setup_nginx(server_assistant),
-                          "Setup Nginx reverse proxy")
-                          
-        self.add_menu_item("setup", "3", "Setup GitLab Storage",
+        self.add_menu_item("setup", "2", "Setup GitLab Storage",
                           lambda: self._setup_gitlab_storage(server_assistant),
                           "Setup GitLab persistent storage")
                           
-        self.add_menu_item("setup", "4", "Setup Mail Storage",
+        self.add_menu_item("setup", "3", "Setup Mail Storage",
                           lambda: self._setup_mail_storage(server_assistant),
                           "Setup mail server persistent storage")
                           
-        self.add_menu_item("setup", "5", "Generate SSL Certificates",
+        self.add_menu_item("setup", "4", "Generate SSL Certificates",
                           lambda: self._generate_ssl_certificates(server_assistant),
                           "Generate SSL certificates")
                           
-        self.add_menu_item("setup", "6", "Complete System Setup",
+        self.add_menu_item("setup", "5", "Complete System Setup",
                           lambda: self._complete_system_setup(server_assistant),
                           "Run complete system setup")
                           
@@ -202,19 +198,15 @@ class MenuSystem:
                           lambda: self._test_docker_environment(server_assistant),
                           "Test Docker installation and configuration")
                           
-        self.add_menu_item("testing", "3", "Test Nginx Setup",
-                          lambda: self._test_nginx_setup(server_assistant),
-                          "Test Nginx configuration and connectivity")
-                          
-        self.add_menu_item("testing", "4", "Test GitLab",
+        self.add_menu_item("testing", "3", "Test GitLab",
                           lambda: self._test_gitlab(server_assistant),
                           "Test GitLab functionality")
                           
-        self.add_menu_item("testing", "5", "Test Mail Server",
+        self.add_menu_item("testing", "4", "Test Mail Server",
                           lambda: self._test_mail_server(server_assistant),
                           "Test mail server functionality")
                           
-        self.add_menu_item("testing", "6", "Test Database Connections",
+        self.add_menu_item("testing", "5", "Test Database Connections",
                           lambda: self._test_database_connections(server_assistant),
                           "Test database connectivity")
                           
@@ -390,10 +382,6 @@ class MenuSystem:
         DisplayUtils.print_info("Installing dependencies...")
         # Implementation would go here
         
-    def _setup_nginx(self, server_assistant):
-        DisplayUtils.print_info("Setting up Nginx...")
-        # Implementation would go here
-        
     def _setup_gitlab_storage(self, server_assistant):
         DisplayUtils.print_info("Setting up GitLab storage...")
         # Implementation would go here
@@ -416,10 +404,6 @@ class MenuSystem:
         
     def _test_docker_environment(self, server_assistant):
         DisplayUtils.print_info("Testing Docker environment...")
-        # Implementation would go here
-        
-    def _test_nginx_setup(self, server_assistant):
-        DisplayUtils.print_info("Testing Nginx setup...")
         # Implementation would go here
         
     def _test_gitlab(self, server_assistant):

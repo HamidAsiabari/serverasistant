@@ -130,7 +130,6 @@ For comprehensive documentation, guides, and tutorials, please visit our **[Docu
 - **JSON Configuration**: Define services in a simple JSON configuration file
 - **Docker Support**: Run individual Docker containers from Dockerfiles
 - **Docker Compose Support**: Manage multi-service applications with Docker Compose
-- **Nginx Reverse Proxy**: Professional domain-based routing with SSL/TLS support
 - **Health Monitoring**: Built-in health checks and monitoring
 - **Cross-Server Compatibility**: Use the same configuration across different servers
 - **Cross-Platform Support**: Works on Linux Ubuntu and Windows servers
@@ -171,8 +170,8 @@ serverasistant/
 │   ├── windows/          # Windows-specific scripts
 │   └── linux/            # Linux-specific scripts
 ├── docker_services/       # 📦 Docker service definitions
-│   ├── nginx/            # Nginx reverse proxy setup
 │   ├── mysql/            # MySQL database service
+│   ├── nginx/            # Nginx reverse proxy with SSL
 │   ├── gitlab/           # GitLab development platform
 │   ├── mail-server/      # Complete email stack
 │   ├── portainer/        # Portainer container management

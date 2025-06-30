@@ -85,13 +85,6 @@ backup_configs() {
     cp config.json "$config_backup_dir/" 2>/dev/null || true
     cp test_config_ubuntu22.json "$config_backup_dir/" 2>/dev/null || true
     
-    # Backup Nginx configurations
-    if [ -d "example_services/nginx" ]; then
-        mkdir -p "$config_backup_dir/nginx"
-        cp -r example_services/nginx/config "$config_backup_dir/nginx/" 2>/dev/null || true
-        cp example_services/nginx/docker-compose.yml "$config_backup_dir/nginx/" 2>/dev/null || true
-    fi
-    
     # Backup SSL certificates
     if [ -d "example_services/nginx/ssl" ]; then
         mkdir -p "$config_backup_dir/ssl"
@@ -193,7 +186,6 @@ Services Backed Up:
 - MySQL Database
 - PostgreSQL Database
 - Redis Cache
-- Nginx Configurations
 - SSL Certificates
 - System Information
 

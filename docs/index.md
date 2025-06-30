@@ -103,7 +103,6 @@ serverasistant/
 │   ├── windows/          # Windows-specific scripts
 │   └── linux/            # Linux-specific scripts
 ├── docker_services/       # 📦 Docker service definitions
-│   ├── nginx/            # Nginx reverse proxy setup
 │   ├── mysql/            # MySQL database service
 │   ├── gitlab/           # GitLab development platform
 │   ├── mail-server/      # Complete email stack

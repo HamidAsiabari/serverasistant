@@ -81,12 +81,6 @@ mkdir "%BACKUP_DIR%\configs" 2>nul
 if exist "config.json" copy "config.json" "%BACKUP_DIR%\configs\" >nul
 if exist "test_config_ubuntu22.json" copy "test_config_ubuntu22.json" "%BACKUP_DIR%\configs\" >nul
 
-if exist "example_services\nginx" (
-    mkdir "%BACKUP_DIR%\configs\nginx" 2>nul
-    xcopy "example_services\nginx\config" "%BACKUP_DIR%\configs\nginx\config\" /E /I /Y >nul 2>nul
-    if exist "example_services\nginx\docker-compose.yml" copy "example_services\nginx\docker-compose.yml" "%BACKUP_DIR%\configs\nginx\" >nul
-)
-
 if exist "example_services\nginx\ssl" (
     mkdir "%BACKUP_DIR%\configs\ssl" 2>nul
     xcopy "example_services\nginx\ssl" "%BACKUP_DIR%\configs\ssl\" /E /I /Y >nul 2>nul

@@ -42,44 +42,11 @@ def check_docker_networks():
         print(f"❌ Error: {stderr}")
         return False
 
-def check_nginx_status():
-    """Check Nginx status"""
-    print("\n🔍 Checking Nginx status...")
-    
-    # Check if nginx container is running
-    success, stdout, stderr = run_command("docker ps --filter name=nginx-proxy --format '{{.Names}}\t{{.Status}}'")
-    
-    if success and "nginx-proxy" in stdout:
-        print("✅ Nginx container is running")
-        
-        # Check Nginx logs
-        print("\n📋 Nginx logs (last 10 lines):")
-        success, stdout, stderr = run_command("docker logs nginx-proxy --tail 10")
-        if success:
-            print(stdout)
-        else:
-            print(f"❌ Error getting logs: {stderr}")
-        
-        # Test Nginx configuration
-        print("\n🔧 Testing Nginx configuration:")
-        success, stdout, stderr = run_command("docker exec nginx-proxy nginx -t")
-        if success:
-            print("✅ Nginx configuration is valid")
-        else:
-            print(f"❌ Nginx configuration error: {stderr}")
-        
-        return True
-    else:
-        print("❌ Nginx container is not running")
-        return False
-
 def test_local_access():
     """Test local access to services"""
     print("\n🔍 Testing local access to services...")
     
     services = [
-        ("HTTP (port 80)", "http://localhost:80"),
-        ("HTTPS (port 443)", "https://localhost:443"),
         ("Web App (port 8080)", "http://localhost:8080"),
         ("Portainer (port 9000)", "http://localhost:9000"),
         ("Roundcube (port 8083)", "http://localhost:8083"),
@@ -142,9 +109,6 @@ def main():
     # Check Docker networks
     networks_ok = check_docker_networks()
     
-    # Check Nginx status
-    nginx_ok = check_nginx_status()
-    
     # Test local access
     test_local_access()
     
@@ -160,13 +124,11 @@ def main():
     
     print(f"Containers: {'✅ OK' if containers_ok else '❌ ISSUES'}")
     print(f"Networks: {'✅ OK' if networks_ok else '❌ ISSUES'}")
-    print(f"Nginx: {'✅ OK' if nginx_ok else '❌ ISSUES'}")
     
     print("\n💡 Troubleshooting tips:")
     print("1. If subdomains don't work, add them to /etc/hosts:")
     print("   127.0.0.1 app.soject.com admin.soject.com portainer.soject.com gitlab.soject.com mail.soject.com")
     print("2. If services aren't accessible, check if containers are on the same network")
-    print("3. If Nginx has errors, check the configuration files")
 
 if __name__ == "__main__":
     main() 

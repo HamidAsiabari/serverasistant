@@ -226,21 +226,6 @@ setup_persistent_storage() {
     fi
 }
 
-# Setup Nginx
-setup_nginx() {
-    print_status "Setting up Nginx reverse proxy..."
-    
-    if [ -d "example_services/nginx" ]; then
-        cd example_services/nginx
-        if [ -f "setup_nginx.sh" ]; then
-            chmod +x setup_nginx.sh
-            ./setup_nginx.sh
-            print_success "Nginx setup completed"
-        fi
-        cd "$PROJECT_ROOT"
-    fi
-}
-
 # Generate SSL certificates
 generate_ssl() {
     print_status "Generating SSL certificates..."
@@ -280,9 +265,6 @@ perform_first_time_setup() {
     
     # Setup persistent storage
     setup_persistent_storage
-    
-    # Setup Nginx
-    setup_nginx
     
     # Generate SSL certificates
     generate_ssl

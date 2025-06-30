@@ -127,13 +127,6 @@ if exist "example_services\mail-server\setup_persistent_storage.sh" (
     echo [INFO] Mail server storage setup skipped (requires Linux/WSL)
 )
 
-REM Setup Nginx
-if exist "example_services\nginx\setup_nginx.sh" (
-    echo [INFO] Setting up Nginx...
-    REM Note: This would need to be adapted for Windows or use WSL
-    echo [INFO] Nginx setup skipped (requires Linux/WSL)
-)
-
 REM Generate SSL certificates
 if exist "example_services\nginx\generate_ssl.sh" (
     echo [INFO] Generating SSL certificates...

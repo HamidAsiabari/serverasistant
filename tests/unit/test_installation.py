@@ -108,7 +108,6 @@ def test_file_structure():
         "scripts/maintenance/",
         "scripts/startup/",
         "docker_services/",
-        "docker_services/nginx/",
         "docker_services/mysql/",
         "docker_services/database/",
         "docker_services/web-app/",
