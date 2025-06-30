@@ -11,7 +11,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from ui.simple_textual_app import run_simple_textual_app
+from src.ui.simple_textual_app import run_simple_textual_app
 
 
 def main():

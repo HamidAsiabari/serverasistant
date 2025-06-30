@@ -53,8 +53,14 @@ sudo chown -R $CURRENT_USER:$CURRENT_GROUP .
 # Set proper permissions
 print_status "Setting proper permissions..."
 chmod -R 755 .
-chmod 644 *.json *.txt *.md 2>/dev/null || true
-chmod 755 *.sh *.py 2>/dev/null || true
+
+# Set permissions for specific file types using find to avoid errors
+print_status "Setting file permissions..."
+find . -name "*.json" -type f -exec chmod 644 {} \; 2>/dev/null || true
+find . -name "*.txt" -type f -exec chmod 644 {} \; 2>/dev/null || true
+find . -name "*.md" -type f -exec chmod 644 {} \; 2>/dev/null || true
+find . -name "*.sh" -type f -exec chmod 755 {} \; 2>/dev/null || true
+find . -name "*.py" -type f -exec chmod 755 {} \; 2>/dev/null || true
 
 # Remove root-owned virtual environment if it exists
 if [[ -d "venv" ]]; then
