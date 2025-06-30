@@ -1,39 +1,35 @@
 #!/bin/bash
 
-# Generate SSL certificates for all domains
-# This script creates self-signed certificates for development/testing
+# Generate SSL certificates for nginx domains
+# This script creates self-signed certificates for development purposes
 
 SSL_DIR="./ssl"
-mkdir -p $SSL_DIR
+DOMAINS=("default" "app.soject.com" "gitlab.soject.com" "docker.soject.com" "admin.soject.com" "mail.soject.com")
 
-# List of domains
-DOMAINS=("app.soject.com" "admin.soject.com" "docker.soject.com" "gitlab.soject.com" "mail.soject.com")
+# Create SSL directory if it doesn't exist
+mkdir -p "$SSL_DIR"
 
 # Generate certificates for each domain
 for domain in "${DOMAINS[@]}"; do
     echo "Generating SSL certificate for $domain..."
     
-    # Generate private key
-    openssl genrsa -out "$SSL_DIR/$domain.key" 2048
+    if [ "$domain" = "default" ]; then
+        # Default certificate for unknown domains
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout "$SSL_DIR/default.key" \
+            -out "$SSL_DIR/default.crt" \
+            -subj "/C=US/ST=State/L=City/O=Organization/CN=default"
+    else
+        # Domain-specific certificates
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout "$SSL_DIR/$domain.key" \
+            -out "$SSL_DIR/$domain.crt" \
+            -subj "/C=US/ST=State/L=City/O=Organization/CN=$domain"
+    fi
     
-    # Generate certificate signing request
-    openssl req -new -key "$SSL_DIR/$domain.key" -out "$SSL_DIR/$domain.csr" -subj "/C=US/ST=State/L=City/O=Organization/CN=$domain"
-    
-    # Generate self-signed certificate
-    openssl x509 -req -days 365 -in "$SSL_DIR/$domain.csr" -signkey "$SSL_DIR/$domain.key" -out "$SSL_DIR/$domain.crt"
-    
-    # Remove CSR file
-    rm "$SSL_DIR/$domain.csr"
-    
-    echo "Certificate for $domain created successfully!"
+    echo "Certificate for $domain created successfully"
 done
 
-# Generate default certificate for unknown domains
-echo "Generating default SSL certificate..."
-openssl genrsa -out "$SSL_DIR/default.key" 2048
-openssl req -new -key "$SSL_DIR/default.key" -out "$SSL_DIR/default.csr" -subj "/C=US/ST=State/L=City/O=Organization/CN=default"
-openssl x509 -req -days 365 -in "$SSL_DIR/default.csr" -signkey "$SSL_DIR/default.key" -out "$SSL_DIR/default.crt"
-rm "$SSL_DIR/default.csr"
-
 echo "All SSL certificates generated successfully!"
-echo "Certificates are located in: $SSL_DIR" 
+echo "Note: These are self-signed certificates for development use only."
+echo "For production, use proper SSL certificates from a trusted CA." 
