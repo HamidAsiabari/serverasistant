@@ -117,9 +117,15 @@ mkdir -p services
 
 # Set proper permissions
 print_status "Setting proper permissions..."
-chmod +x main.py
-chmod +x monitor.py
-chmod +x test_installation.py
+chmod +x main.py 2>/dev/null || true
+chmod +x monitor.py 2>/dev/null || true
+chmod +x gui_main.py 2>/dev/null || true
+chmod +x serverassistant.py 2>/dev/null || true
+
+# Set permissions for test files if they exist
+if [ -f "tests/unit/test_installation.py" ]; then
+    chmod +x tests/unit/test_installation.py
+fi
 
 # Test Docker installation
 print_status "Testing Docker installation..."
@@ -213,7 +219,9 @@ echo "Next Steps:"
 echo "=========================================="
 echo "1. Log out and log back in (for docker group changes)"
 echo "2. Test the installation:"
-echo "   ./test_installation.py"
+echo "   python -m pytest tests/unit/test_installation.py"
+echo "   # or run the main application:"
+echo "   python main.py status"
 echo ""
 echo "3. Start using the manager:"
 echo "   ./start.sh status"
