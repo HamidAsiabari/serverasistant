@@ -18,8 +18,8 @@ from textual.widgets.data_table import RowKey
 from textual.css.query import DOMQuery
 
 # Import from parent modules
-from ..core.server_assistant import ServerAssistant
-from ..core.docker_manager import ServiceStatus
+from core.server_assistant import ServerAssistant
+from core.docker_manager import ServiceStatus
 
 
 class ServiceStatusWidget(Static):
