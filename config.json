@@ -47,12 +47,11 @@
       ],
       "restart_policy": "unless-stopped",
       "health_check": {
-        "url": "https://app.soject.com/health",
+        "url": "http://app.soject.com/health",
         "interval": 30,
         "timeout": 10,
         "retries": 3
-      },
-      "depends_on": ["web-app"]
+      }
     },
     {
       "name": "mysql-database",
