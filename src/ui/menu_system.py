@@ -7,6 +7,8 @@ from .display_utils import DisplayUtils, LogPanel, SimpleLogDisplay, RealTimeLog
 import threading
 import time
 from datetime import datetime
+from ..core.docker_manager import DockerManager
+from ..core.config_manager import ConfigManager
 
 
 class MenuItem:

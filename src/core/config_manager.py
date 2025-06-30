@@ -15,9 +15,18 @@ class ServiceConfig:
     name: str
     enabled: bool
     path: str
+    type: Optional[str] = None
+    compose_file: Optional[str] = None
+    services: Optional[list] = None
+    restart_policy: Optional[str] = None
+    domains: Optional[dict] = None
+    ports: Optional[list] = None
     port: Optional[int] = None
-    health_check: Optional[str] = None
+    health_check: Optional[dict] = None
+    dependencies: Optional[list] = None
     depends_on: Optional[list] = None
+    environment: Optional[dict] = None
+    volumes: Optional[list] = None
 
 
 @dataclass
@@ -42,6 +51,7 @@ class ConfigManager:
         """Load configuration from file"""
         try:
             if not self.config_path.exists():
+                print(f"Configuration file not found: {self.config_path}")
                 return False
                 
             with open(self.config_path, 'r') as f:
@@ -50,9 +60,19 @@ class ConfigManager:
             # Convert services to ServiceConfig objects
             services = []
             for service_data in data.get('services', []):
-                service = ServiceConfig(**service_data)
-                services.append(service)
-                self.services[service.name] = service
+                try:
+                    # Create ServiceConfig with only the fields that exist in the dataclass
+                    service_config_data = {}
+                    for field in ServiceConfig.__dataclass_fields__:
+                        if field in service_data:
+                            service_config_data[field] = service_data[field]
+                    
+                    service = ServiceConfig(**service_config_data)
+                    services.append(service)
+                    self.services[service.name] = service
+                except Exception as e:
+                    print(f"Error loading service {service_data.get('name', 'unknown')}: {e}")
+                    continue
                 
             self.config = ServerConfig(
                 server_name=data.get('server_name', 'Unknown'),
@@ -62,6 +82,7 @@ class ConfigManager:
                 log_level=data.get('log_level', 'INFO')
             )
             
+            print(f"Loaded {len(services)} services from configuration")
             return True
             
         except Exception as e:
