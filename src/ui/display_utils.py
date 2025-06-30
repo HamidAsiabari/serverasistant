@@ -47,42 +47,63 @@ class LogPanel:
         self.running = False
 
 
-class SplitScreenDisplay:
-    """Split-screen display with menu on left and logs on right"""
+class SimpleSplitScreenDisplay:
+    """Simplified split-screen display with menu on left and logs on right"""
     
     def __init__(self, log_panel: LogPanel):
         self.log_panel = log_panel
-        self.terminal_width = self._get_terminal_width()
-        self.menu_width = int(self.terminal_width * 0.6)  # 60% for menu
-        self.log_width = self.terminal_width - self.menu_width - 2  # 2 for separator
+        # Use fixed widths for better compatibility
+        self.terminal_width = 120
+        self.menu_width = 70
+        self.log_width = 45
         
-    def _get_terminal_width(self) -> int:
-        """Get terminal width"""
-        try:
-            return os.get_terminal_size().columns
-        except:
-            return 120  # Default width
-            
-    def print_split_screen(self, menu_content: str, title: str = ""):
-        """Print split screen with menu on left and logs on right"""
+    def print_menu_with_logs(self, title: str, menu_items: List[Dict[str, str]], 
+                           current_selection: str = ""):
+        """Print menu with real-time logs - simplified version"""
         # Clear screen
-        DisplayUtils.clear_screen()
+        os.system('cls' if os.name == 'nt' else 'clear')
         
-        # Print banner
-        DisplayUtils.print_banner()
+        # Print simple banner
+        print("=" * self.terminal_width)
+        print("ServerAssistant Enhanced - Real-time Logs")
+        print("=" * self.terminal_width)
         
         # Print title
-        if title:
-            DisplayUtils.print_header(title)
+        print(f"\n{title}")
+        print("-" * len(title))
+        
+        # Build menu content
+        menu_lines = []
+        menu_lines.append("")  # Empty line
+        menu_lines.append("Menu Options:")
+        menu_lines.append("-" * 20)
+        menu_lines.append("")
+        
+        for item in menu_items:
+            key = item.get('key', '0')
+            label = item.get('label', 'Unknown')
+            description = item.get('description', '')
             
-        # Split menu content into lines
-        menu_lines = menu_content.split('\n')
+            # Highlight current selection
+            if key == current_selection:
+                menu_lines.append(f"▶ {key}. {label}")
+            else:
+                menu_lines.append(f"  {key}. {label}")
+                
+            if description:
+                menu_lines.append(f"     {description}")
+            menu_lines.append("")
+            
+        menu_lines.append("-" * 20)
+        menu_lines.append("Use number keys to select, 0 to go back")
         
         # Get log lines
         log_lines = self.log_panel.get_logs()
+        if not log_lines:
+            log_lines = ["[No logs available]"]
         
         # Calculate how many lines to display
-        max_lines = max(len(menu_lines), len(log_lines))
+        max_lines = max(len(menu_lines), len(log_lines), 15)
         
         # Print separator line
         separator = "─" * self.terminal_width
@@ -92,11 +113,12 @@ class SplitScreenDisplay:
         for i in range(max_lines):
             # Menu side
             menu_line = menu_lines[i] if i < len(menu_lines) else ""
+            if len(menu_line) > self.menu_width:
+                menu_line = menu_line[:self.menu_width-3] + "..."
             menu_padded = menu_line.ljust(self.menu_width)
             
             # Log side
             log_line = log_lines[i] if i < len(log_lines) else ""
-            # Truncate log line if too long
             if len(log_line) > self.log_width:
                 log_line = log_line[:self.log_width-3] + "..."
             log_padded = log_line.ljust(self.log_width)
@@ -106,34 +128,6 @@ class SplitScreenDisplay:
             
         # Print bottom separator
         print(separator)
-        
-    def print_menu_with_logs(self, title: str, menu_items: List[Dict[str, str]], 
-                           current_selection: str = ""):
-        """Print menu with real-time logs"""
-        # Build menu content
-        menu_content = f"\n{title}\n"
-        menu_content += "─" * (self.menu_width - 2) + "\n\n"
-        
-        for item in menu_items:
-            key = item.get('key', '0')
-            label = item.get('label', 'Unknown')
-            description = item.get('description', '')
-            
-            # Highlight current selection
-            if key == current_selection:
-                menu_content += f"▶ {key}. {label}\n"
-            else:
-                menu_content += f"  {key}. {label}\n"
-                
-            if description:
-                menu_content += f"     {description}\n"
-            menu_content += "\n"
-            
-        # Add navigation info
-        menu_content += "─" * (self.menu_width - 2) + "\n"
-        menu_content += "Use number keys to select, 0 to go back\n"
-        
-        self.print_split_screen(menu_content, title)
 
 
 class DisplayUtils:

@@ -3,7 +3,7 @@ Menu system for ServerAssistant
 """
 
 from typing import Dict, List, Callable, Any, Optional
-from .display_utils import DisplayUtils, LogPanel, SplitScreenDisplay
+from .display_utils import DisplayUtils, LogPanel, SimpleSplitScreenDisplay
 import threading
 import time
 
@@ -442,7 +442,7 @@ class EnhancedMenuSystem(MenuSystem):
     def __init__(self):
         super().__init__()
         self.log_panel = LogPanel(max_lines=15)
-        self.split_display = SplitScreenDisplay(self.log_panel)
+        self.split_display = SimpleSplitScreenDisplay(self.log_panel)
         self.refresh_thread = None
         self.auto_refresh = True
         
@@ -481,6 +481,12 @@ class EnhancedMenuSystem(MenuSystem):
         # Start auto-refresh
         self.start_auto_refresh()
         
+        # Add debug log
+        self.log_panel.add_log(f"Displaying menu: {menu_id}", "DEBUG")
+        self.log_panel.add_log(f"Terminal width: {self.split_display.terminal_width}", "DEBUG")
+        self.log_panel.add_log(f"Menu width: {self.split_display.menu_width}", "DEBUG")
+        self.log_panel.add_log(f"Log width: {self.split_display.log_width}", "DEBUG")
+        
         while self.running and self.current_menu == menu_id:
             # Build menu items for display
             menu_items = []
@@ -490,6 +496,9 @@ class EnhancedMenuSystem(MenuSystem):
                     'label': item.label,
                     'description': item.description
                 })
+            
+            # Add debug log
+            self.log_panel.add_log(f"Menu items: {len(menu_items)}", "DEBUG")
             
             # Display menu with logs
             self.split_display.print_menu_with_logs(title, menu_items)
