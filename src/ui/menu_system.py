@@ -24,6 +24,7 @@ class MenuSystem:
     def __init__(self):
         self.menus: Dict[str, List[MenuItem]] = {}
         self.current_menu: Optional[str] = None
+        self.menu_stack: List[str] = []  # Navigation stack
         self.running = True
         
     def add_menu(self, menu_id: str, title: str):
@@ -46,6 +47,10 @@ class MenuSystem:
             DisplayUtils.print_error(f"Menu '{menu_id}' not found")
             return
             
+        # Add current menu to stack (unless it's already there)
+        if not self.menu_stack or self.menu_stack[-1] != menu_id:
+            self.menu_stack.append(menu_id)
+            
         self.current_menu = menu_id
         
         while self.running and self.current_menu == menu_id:
@@ -59,7 +64,11 @@ class MenuSystem:
                 if item.description:
                     DisplayUtils.print_info(f"    {item.description}")
                     
-            print("\n0. Back" if menu_id != "main" else "\n0. Exit")
+            # Show appropriate back/exit option
+            if menu_id == "main":
+                print("\n0. Exit")
+            else:
+                print("\n0. Back")
             
             # Get user input
             choice = input("\nSelect an option: ").strip()
@@ -68,7 +77,18 @@ class MenuSystem:
                 if menu_id == "main":
                     self.running = False
                 else:
-                    self.current_menu = None
+                    # Go back to previous menu
+                    self.menu_stack.pop()  # Remove current menu from stack
+                    if self.menu_stack:
+                        # Return to previous menu
+                        previous_menu = self.menu_stack[-1]
+                        self.current_menu = None  # Break current loop
+                        # Recursively call display_menu for the previous menu
+                        self.display_menu(previous_menu, self._get_menu_title(previous_menu))
+                    else:
+                        # If no previous menu, go to main
+                        self.current_menu = None
+                        self.display_menu("main", "ServerAssistant - Main Menu")
                 break
                 
             # Find and execute selected action
@@ -96,6 +116,19 @@ class MenuSystem:
                 DisplayUtils.print_warning("Invalid option. Please try again.")
                 input("Press Enter to continue...")
                 
+    def _get_menu_title(self, menu_id: str) -> str:
+        """Get the title for a menu"""
+        if menu_id == "main":
+            return "ServerAssistant - Main Menu"
+        elif menu_id == "service_management":
+            return "Service Management"
+        elif menu_id == "setup":
+            return "Setup & Installation"
+        elif menu_id == "testing":
+            return "Testing & Validation"
+        else:
+            return menu_id.replace("_", " ").title()
+        
     def create_service_management_menu(self, server_assistant):
         """Create service management menu"""
         self.add_menu("service_management", "Service Management")
@@ -217,60 +250,64 @@ class MenuSystem:
         """Show individual service control menu"""
         services = server_assistant.get_services()
         
-        DisplayUtils.print_header("Individual Service Control")
+        # Create a temporary menu for individual services
+        temp_menu_id = "individual_services"
+        self.add_menu(temp_menu_id, "Individual Service Control")
         
+        # Add menu items for each service
         for i, (name, service) in enumerate(services.items(), 1):
-            print(f"{i}. {name}")
-            
-        print("0. Back")
+            self.add_menu_item(temp_menu_id, str(i), name,
+                              lambda s=name: self._show_service_control_menu(server_assistant, s),
+                              f"Control {name} service")
         
-        choice = input("\nSelect a service: ").strip()
+        # Display the menu
+        self.display_menu(temp_menu_id, "Individual Service Control")
         
-        if choice == "0":
-            return
-            
-        try:
-            service_index = int(choice) - 1
-            service_names = list(services.keys())
-            
-            if 0 <= service_index < len(service_names):
-                service_name = service_names[service_index]
-                self._show_service_control_menu(server_assistant, service_name)
-            else:
-                DisplayUtils.print_warning("Invalid service selection")
-        except ValueError:
-            DisplayUtils.print_warning("Invalid input")
-            
+        # Clean up temporary menu
+        if temp_menu_id in self.menus:
+            del self.menus[temp_menu_id]
+        
     def _show_service_control_menu(self, server_assistant, service_name):
         """Show control menu for a specific service"""
-        DisplayUtils.print_header(f"Service Control - {service_name}")
+        # Create a temporary menu for service control
+        temp_menu_id = f"service_control_{service_name}"
+        self.add_menu(temp_menu_id, f"Service Control - {service_name}")
         
-        print("1. Start Service")
-        print("2. Stop Service")
-        print("3. Restart Service")
-        print("4. View Logs")
-        print("5. Health Check")
-        print("0. Back")
+        # Add menu items for service actions
+        self.add_menu_item(temp_menu_id, "1", "Start Service",
+                          lambda: server_assistant.start_service(service_name),
+                          f"Start {service_name} service")
+                          
+        self.add_menu_item(temp_menu_id, "2", "Stop Service",
+                          lambda: server_assistant.stop_service(service_name),
+                          f"Stop {service_name} service", True)
+                          
+        self.add_menu_item(temp_menu_id, "3", "Restart Service",
+                          lambda: server_assistant.restart_service(service_name),
+                          f"Restart {service_name} service", True)
+                          
+        self.add_menu_item(temp_menu_id, "4", "View Logs",
+                          lambda: self._show_service_logs(server_assistant, service_name),
+                          f"View logs for {service_name}")
+                          
+        self.add_menu_item(temp_menu_id, "5", "Health Check",
+                          lambda: server_assistant.health_check_service(service_name),
+                          f"Perform health check on {service_name}")
         
-        choice = input("\nSelect an action: ").strip()
+        # Display the menu
+        self.display_menu(temp_menu_id, f"Service Control - {service_name}")
         
-        if choice == "1":
-            server_assistant.start_service(service_name)
-        elif choice == "2":
-            server_assistant.stop_service(service_name)
-        elif choice == "3":
-            server_assistant.restart_service(service_name)
-        elif choice == "4":
-            logs = server_assistant.get_service_logs(service_name)
-            DisplayUtils.print_header(f"Logs - {service_name}")
-            print(logs)
-        elif choice == "5":
-            server_assistant.health_check_service(service_name)
-        elif choice == "0":
-            return
-        else:
-            DisplayUtils.print_warning("Invalid option")
+        # Clean up temporary menu
+        if temp_menu_id in self.menus:
+            del self.menus[temp_menu_id]
             
+    def _show_service_logs(self, server_assistant, service_name):
+        """Show logs for a specific service"""
+        logs = server_assistant.get_service_logs(service_name)
+        DisplayUtils.print_header(f"Logs - {service_name}")
+        print(logs)
+        input("Press Enter to continue...")
+        
     def _show_service_status(self, server_assistant):
         """Show service status"""
         statuses = server_assistant.get_all_service_status()
@@ -293,31 +330,22 @@ class MenuSystem:
         """Show service logs menu"""
         services = server_assistant.get_services()
         
-        DisplayUtils.print_header("Service Logs")
+        # Create a temporary menu for service logs
+        temp_menu_id = "service_logs"
+        self.add_menu(temp_menu_id, "Service Logs")
         
+        # Add menu items for each service
         for i, (name, service) in enumerate(services.items(), 1):
-            print(f"{i}. {name}")
-            
-        print("0. Back")
+            self.add_menu_item(temp_menu_id, str(i), name,
+                              lambda s=name: self._show_service_logs(server_assistant, s),
+                              f"View logs for {name}")
         
-        choice = input("\nSelect a service: ").strip()
+        # Display the menu
+        self.display_menu(temp_menu_id, "Service Logs")
         
-        if choice == "0":
-            return
-            
-        try:
-            service_index = int(choice) - 1
-            service_names = list(services.keys())
-            
-            if 0 <= service_index < len(service_names):
-                service_name = service_names[service_index]
-                logs = server_assistant.get_service_logs(service_name)
-                DisplayUtils.print_header(f"Logs - {service_name}")
-                print(logs)
-            else:
-                DisplayUtils.print_warning("Invalid service selection")
-        except ValueError:
-            DisplayUtils.print_warning("Invalid input")
+        # Clean up temporary menu
+        if temp_menu_id in self.menus:
+            del self.menus[temp_menu_id]
             
     # Placeholder methods for other menu actions
     def _install_dependencies(self, server_assistant):

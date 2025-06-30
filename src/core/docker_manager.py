@@ -175,11 +175,16 @@ class DockerManager:
         """Get logs for a specific service"""
         service = self.services.get(service_name)
         if not service:
-            return ""
+            return f"Error: Service '{service_name}' not found in configuration"
             
         service_path = self.base_path / service.path
         if not service_path.exists():
-            return ""
+            return f"Error: Service path '{service_path}' does not exist"
+            
+        # First check if the service is running
+        status = self.get_service_status(service_name)
+        if not status or status.status not in ["running", "up"]:
+            return f"Service '{service_name}' is not running (status: {status.status if status else 'unknown'})\n\nTo see logs, start the service first."
             
         command = "docker-compose logs"
         if follow:
@@ -187,7 +192,17 @@ class DockerManager:
         command += f" {service_name}"
         
         success, stdout, stderr = self.run_command(command, cwd=service_path)
-        return stdout if success else stderr
+        
+        if not success:
+            if stderr:
+                return f"Error getting logs for '{service_name}': {stderr}"
+            else:
+                return f"Error getting logs for '{service_name}': Unknown error"
+        
+        if not stdout.strip():
+            return f"No logs available for service '{service_name}'\n\nThis could mean:\n- The service just started and hasn't generated logs yet\n- The service is running but not producing output\n- Check if the service is configured to log to stdout/stderr"
+        
+        return stdout
         
     def health_check_service(self, service_name: str) -> bool:
         """Perform health check on a service"""

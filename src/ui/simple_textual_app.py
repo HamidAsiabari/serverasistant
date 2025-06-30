@@ -174,6 +174,31 @@ class SimpleServerAssistantApp(App):
     def on_mount(self) -> None:
         """Called when the app is mounted."""
         self.refresh_data()
+        self.initialize_logs_screen()
+        
+    def initialize_logs_screen(self) -> None:
+        """Initialize the logs screen with helpful information."""
+        logs_screen = self.query_one("#logs-tab")
+        log_viewer = logs_screen.query_one("#main-log-viewer")
+        
+        welcome_message = """📋 Service Logs Viewer
+
+Welcome to the logs viewer! Here's how to use it:
+
+1. Select a service from the dropdown above
+2. Click "Refresh" to reload logs
+3. Use the "Logs" button on service cards to quickly view logs
+
+Note: You can only view logs for running services. If a service is stopped, start it first to see its logs.
+
+Available services:
+"""
+        
+        services = self.server_assistant.get_services()
+        for service_name in services.keys():
+            welcome_message += f"• {service_name}\n"
+            
+        log_viewer.write(welcome_message)
         
     @work
     def refresh_data(self) -> None:
@@ -263,6 +288,17 @@ class SimpleServerAssistantApp(App):
             service_name = button_id.replace("logs-", "")
             self.show_service_logs(service_name)
             
+        elif button_id == "refresh-logs":
+            # Get currently selected service from the selector
+            logs_screen = self.query_one("#logs-tab")
+            service_selector = logs_screen.query_one("#service-selector")
+            current_service = service_selector.value
+            
+            if current_service:
+                self.show_service_logs(current_service)
+            else:
+                self.notify("Please select a service first", severity="warning")
+            
     @work
     def start_service(self, service_name: str) -> None:
         """Start a service."""
@@ -327,17 +363,41 @@ class SimpleServerAssistantApp(App):
     def show_service_logs(self, service_name: str) -> None:
         """Show logs for a service."""
         try:
-            logs = self.server_assistant.get_service_logs(service_name)
+            # Show loading message
             logs_screen = self.query_one("#logs-tab")
             log_viewer = logs_screen.query_one("#main-log-viewer")
             log_viewer.clear()
-            log_viewer.write(logs)
+            log_viewer.write(f"Loading logs for {service_name}...")
+            
+            # Get logs
+            logs = self.server_assistant.get_service_logs(service_name)
+            
+            # Clear and display logs
+            log_viewer.clear()
+            if logs:
+                log_viewer.write(logs)
+            else:
+                log_viewer.write(f"No logs available for {service_name}")
             
             # Switch to logs tab
             self.query_one("#main-tabs").active = "logs-tab"
             
+            # Show notification
+            self.notify(f"Logs loaded for {service_name}", severity="information")
+            
         except Exception as e:
+            logs_screen = self.query_one("#logs-tab")
+            log_viewer = logs_screen.query_one("#main-log-viewer")
+            log_viewer.clear()
+            log_viewer.write(f"Error getting logs for {service_name}: {str(e)}")
             self.notify(f"Error getting logs: {e}", severity="error")
+            
+    def on_select_changed(self, event: Select.Changed) -> None:
+        """Handle select widget changes."""
+        if event.select.id == "service-selector":
+            service_name = event.value
+            if service_name:
+                self.show_service_logs(service_name)
             
     def action_refresh(self) -> None:
         """Refresh data."""
