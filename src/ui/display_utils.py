@@ -47,6 +47,60 @@ class LogPanel:
         self.running = False
 
 
+class SimpleLogDisplay:
+    """Simple log display that shows logs after each action"""
+    
+    def __init__(self, max_lines: int = 10):
+        self.max_lines = max_lines
+        self.log_lines = []
+        self.lock = threading.Lock()
+        
+    def add_log(self, message: str, level: str = "INFO"):
+        """Add a log message"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        log_entry = f"[{timestamp}] {level}: {message}"
+        
+        with self.lock:
+            self.log_lines.append(log_entry)
+            # Keep only the last max_lines
+            if len(self.log_lines) > self.max_lines:
+                self.log_lines = self.log_lines[-self.max_lines:]
+                
+    def get_logs(self) -> List[str]:
+        """Get current log lines"""
+        with self.lock:
+            return self.log_lines.copy()
+            
+    def clear(self):
+        """Clear all logs"""
+        with self.lock:
+            self.log_lines.clear()
+            
+    def show_logs(self, title: str = "Recent Logs"):
+        """Display logs in a simple format"""
+        logs = self.get_logs()
+        
+        if not logs:
+            print(f"\n{title}")
+            print("-" * len(title))
+            print("No logs available")
+            return
+            
+        print(f"\n{title}")
+        print("-" * len(title))
+        
+        for log in logs:
+            print(log)
+            
+        print("-" * len(title))
+        
+    def show_logs_after_action(self, action_name: str):
+        """Show logs after an action is completed"""
+        self.add_log(f"Action completed: {action_name}", "SUCCESS")
+        self.show_logs("Action Logs")
+        input("Press Enter to continue...")
+
+
 class SimpleSplitScreenDisplay:
     """Simplified split-screen display with menu on left and logs on right"""
     

@@ -3,7 +3,7 @@ Menu system for ServerAssistant
 """
 
 from typing import Dict, List, Callable, Any, Optional
-from .display_utils import DisplayUtils, LogPanel, SimpleSplitScreenDisplay
+from .display_utils import DisplayUtils, LogPanel, SimpleLogDisplay
 import threading
 import time
 
@@ -306,27 +306,27 @@ class MenuSystem:
     def _show_service_logs(self, server_assistant, service_name):
         """Show logs for a specific service"""
         # Add logging if using enhanced menu system
-        if hasattr(self, 'log_panel'):
-            self.log_panel.add_log(f"Fetching logs for {service_name}", "INFO")
+        if hasattr(self, 'log_display'):
+            self.log_display.add_log(f"Fetching logs for {service_name}", "INFO")
             
         logs = server_assistant.get_service_logs(service_name)
         DisplayUtils.print_header(f"Logs - {service_name}")
         print(logs)
         
         # Add logging if using enhanced menu system
-        if hasattr(self, 'log_panel'):
+        if hasattr(self, 'log_display'):
             if logs and logs.strip():
-                self.log_panel.add_log(f"Logs retrieved for {service_name} ({len(logs)} chars)", "SUCCESS")
+                self.log_display.add_log(f"Logs retrieved for {service_name} ({len(logs)} chars)", "SUCCESS")
             else:
-                self.log_panel.add_log(f"No logs available for {service_name}", "WARNING")
+                self.log_display.add_log(f"No logs available for {service_name}", "WARNING")
                 
         input("Press Enter to continue...")
         
     def _show_service_status(self, server_assistant):
         """Show service status"""
         # Add logging if using enhanced menu system
-        if hasattr(self, 'log_panel'):
-            self.log_panel.add_log("Fetching service status...", "INFO")
+        if hasattr(self, 'log_display'):
+            self.log_display.add_log("Fetching service status...", "INFO")
             
         statuses = server_assistant.get_all_service_status()
         
@@ -345,9 +345,9 @@ class MenuSystem:
         DisplayUtils.print_service_status_table(service_data)
         
         # Add logging if using enhanced menu system
-        if hasattr(self, 'log_panel'):
+        if hasattr(self, 'log_display'):
             running_count = sum(1 for s in service_data if s['status'] == 'running')
-            self.log_panel.add_log(f"Status retrieved: {running_count}/{len(service_data)} services running", "SUCCESS")
+            self.log_display.add_log(f"Status retrieved: {running_count}/{len(service_data)} services running", "SUCCESS")
         
     def _show_service_logs_menu(self, server_assistant):
         """Show service logs menu"""
@@ -436,38 +436,15 @@ class MenuSystem:
             DisplayUtils.print_error("No configuration available")
 
 
-class EnhancedMenuSystem(MenuSystem):
-    """Enhanced menu system with real-time log panel"""
+class SimpleEnhancedMenuSystem(MenuSystem):
+    """Simplified enhanced menu system with simple log display after actions"""
     
     def __init__(self):
         super().__init__()
-        self.log_panel = LogPanel(max_lines=15)
-        self.split_display = SimpleSplitScreenDisplay(self.log_panel)
-        self.refresh_thread = None
-        self.auto_refresh = True
+        self.log_display = SimpleLogDisplay(max_lines=10)
         
-    def start_auto_refresh(self):
-        """Start auto-refresh thread for the display"""
-        if self.refresh_thread is None or not self.refresh_thread.is_alive():
-            self.refresh_thread = threading.Thread(target=self._auto_refresh_loop, daemon=True)
-            self.refresh_thread.start()
-            
-    def stop_auto_refresh(self):
-        """Stop auto-refresh thread"""
-        self.auto_refresh = False
-        if self.refresh_thread and self.refresh_thread.is_alive():
-            self.refresh_thread.join(timeout=1)
-            
-    def _auto_refresh_loop(self):
-        """Auto-refresh loop for the display"""
-        while self.auto_refresh and self.running:
-            try:
-                time.sleep(0.5)  # Refresh every 500ms
-            except KeyboardInterrupt:
-                break
-                
     def display_menu(self, menu_id: str, title: str):
-        """Display a menu with real-time logs"""
+        """Display a menu with simple log display after actions"""
         if menu_id not in self.menus:
             DisplayUtils.print_error(f"Menu '{menu_id}' not found")
             return
@@ -478,30 +455,22 @@ class EnhancedMenuSystem(MenuSystem):
             
         self.current_menu = menu_id
         
-        # Start auto-refresh
-        self.start_auto_refresh()
-        
-        # Add debug log
-        self.log_panel.add_log(f"Displaying menu: {menu_id}", "DEBUG")
-        self.log_panel.add_log(f"Terminal width: {self.split_display.terminal_width}", "DEBUG")
-        self.log_panel.add_log(f"Menu width: {self.split_display.menu_width}", "DEBUG")
-        self.log_panel.add_log(f"Log width: {self.split_display.log_width}", "DEBUG")
+        # Add initial log
+        self.log_display.add_log(f"Entered menu: {menu_id}", "INFO")
         
         while self.running and self.current_menu == menu_id:
-            # Build menu items for display
-            menu_items = []
+            # Clear screen and show menu
+            DisplayUtils.clear_screen()
+            DisplayUtils.print_banner()
+            DisplayUtils.print_header(title)
+            
+            # Display menu items
             for item in self.menus[menu_id]:
-                menu_items.append({
-                    'key': item.key,
-                    'label': item.label,
-                    'description': item.description
-                })
-            
-            # Add debug log
-            self.log_panel.add_log(f"Menu items: {len(menu_items)}", "DEBUG")
-            
-            # Display menu with logs
-            self.split_display.print_menu_with_logs(title, menu_items)
+                print(f"{item.key}. {item.label}")
+                if item.description:
+                    DisplayUtils.print_info(f"    {item.description}")
+                    
+            print("\n0. Back" if menu_id != "main" else "\n0. Exit")
             
             # Get user input
             choice = input("\nSelect an option: ").strip()
@@ -533,38 +502,38 @@ class EnhancedMenuSystem(MenuSystem):
                     
             if selected_item:
                 # Log the action
-                self.log_panel.add_log(f"Executing: {selected_item.label}", "ACTION")
+                self.log_display.add_log(f"Executing: {selected_item.label}", "ACTION")
                 
                 if selected_item.requires_confirmation:
                     confirm = input(f"Are you sure you want to {selected_item.label.lower()}? (y/N): ").strip().lower()
                     if confirm != 'y':
-                        self.log_panel.add_log("Operation cancelled by user", "WARNING")
-                        input("Press Enter to continue...")
+                        self.log_display.add_log("Operation cancelled by user", "WARNING")
+                        self.log_display.show_logs_after_action("Operation Cancelled")
                         continue
                         
                 try:
                     # Execute the action
                     selected_item.action()
-                    self.log_panel.add_log(f"Successfully executed: {selected_item.label}", "SUCCESS")
+                    self.log_display.add_log(f"Successfully executed: {selected_item.label}", "SUCCESS")
+                    # Show logs after action
+                    self.log_display.show_logs_after_action(selected_item.label)
                 except Exception as e:
-                    self.log_panel.add_log(f"Error executing {selected_item.label}: {e}", "ERROR")
+                    self.log_display.add_log(f"Error executing {selected_item.label}: {e}", "ERROR")
                     DisplayUtils.print_error(f"Error executing action: {e}")
-                    
-                input("Press Enter to continue...")
+                    self.log_display.show_logs_after_action(f"Error in {selected_item.label}")
             else:
-                self.log_panel.add_log(f"Invalid option selected: {choice}", "WARNING")
+                self.log_display.add_log(f"Invalid option selected: {choice}", "WARNING")
                 DisplayUtils.print_warning("Invalid option. Please try again.")
-                input("Press Enter to continue...")
+                self.log_display.show_logs_after_action("Invalid Selection")
                 
     def log_action(self, message: str, level: str = "INFO"):
-        """Add a log message to the panel"""
-        self.log_panel.add_log(message, level)
+        """Add a log message"""
+        self.log_display.add_log(message, level)
+        
+    def show_logs(self, title: str = "Recent Logs"):
+        """Show current logs"""
+        self.log_display.show_logs(title)
         
     def clear_logs(self):
-        """Clear the log panel"""
-        self.log_panel.clear()
-        
-    def cleanup(self):
-        """Cleanup resources"""
-        self.stop_auto_refresh()
-        self.log_panel.stop() 
+        """Clear the logs"""
+        self.log_display.clear() 

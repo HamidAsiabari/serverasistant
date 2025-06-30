@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.server_assistant import ServerAssistant
 from src.ui.display_utils import DisplayUtils
-from src.ui.menu_system import EnhancedMenuSystem
+from src.ui.menu_system import SimpleEnhancedMenuSystem
 
 
 def print_banner():
@@ -135,7 +135,7 @@ Examples:
             print()
             
             # Create enhanced menu system
-            menu_system = EnhancedMenuSystem()
+            menu_system = SimpleEnhancedMenuSystem()
             
             # Add initial log message
             menu_system.log_action("ServerAssistant Enhanced started", "INFO")
@@ -163,9 +163,6 @@ Examples:
             except KeyboardInterrupt:
                 menu_system.log_action("Application interrupted by user", "WARNING")
                 print("\n👋 Goodbye!")
-            finally:
-                # Cleanup
-                menu_system.cleanup()
             
     except KeyboardInterrupt:
         DisplayUtils.print_warning("\nOperation cancelled by user")
