@@ -7,12 +7,14 @@ import sys
 import argparse
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-from core.server_assistant import ServerAssistant
-from ui.menu_system import MenuSystem
-from ui.display_utils import DisplayUtils
+# Use absolute imports from the project root
+from src.core.server_assistant import ServerAssistant
+from src.ui.menu_system import MenuSystem
+from src.ui.display_utils import DisplayUtils
 
 
 def main():

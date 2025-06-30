@@ -297,9 +297,16 @@ launch_serverassistant() {
     print_status "Launching ServerAssistant (Organized Structure)..."
     echo ""
     
-    # Try organized structure first
-    if [ -f "src/main.py" ]; then
+    # Try the new Linux launcher first
+    if [ -f "launch_linux.py" ]; then
         # Make sure the script is executable
+        chmod +x launch_linux.py
+        
+        # Activate virtual environment and run ServerAssistant
+        source "$VENV_ACTIVATE"
+        python launch_linux.py
+    elif [ -f "src/main.py" ]; then
+        # Fallback to organized structure
         chmod +x src/main.py
         
         # Activate virtual environment and run ServerAssistant
