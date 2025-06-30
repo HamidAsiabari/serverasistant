@@ -80,25 +80,42 @@ class SimpleLogDisplay:
         """Display logs in a simple format"""
         logs = self.get_logs()
         
-        if not logs:
-            print(f"\n{title}")
-            print("-" * len(title))
-            print("No logs available")
-            return
-            
-        print(f"\n{title}")
-        print("-" * len(title))
+        print("\n" + "="*60)
+        print(f"📋 {title}")
+        print("="*60)
         
-        for log in logs:
-            print(log)
-            
-        print("-" * len(title))
+        if not logs:
+            print("No logs available")
+        else:
+            for log in logs:
+                print(log)
+                
+        print("="*60)
         
     def show_logs_after_action(self, action_name: str):
         """Show logs after an action is completed"""
         self.add_log(f"Action completed: {action_name}", "SUCCESS")
+        
+        # Always show logs after action
         self.show_logs("Action Logs")
-        input("Press Enter to continue...")
+        
+        # Show a clear message
+        print(f"\n✅ Action '{action_name}' completed successfully!")
+        print("📋 Above are the recent logs for this session.")
+        input("\nPress Enter to continue...")
+        
+    def show_logs_after_error(self, action_name: str, error: str):
+        """Show logs after an error occurs"""
+        self.add_log(f"Error in action: {action_name} - {error}", "ERROR")
+        
+        # Always show logs after error
+        self.show_logs("Error Logs")
+        
+        # Show a clear error message
+        print(f"\n❌ Action '{action_name}' failed!")
+        print(f"💡 Error: {error}")
+        print("📋 Above are the recent logs for this session.")
+        input("\nPress Enter to continue...")
 
 
 class SimpleSplitScreenDisplay:

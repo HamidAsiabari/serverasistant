@@ -137,25 +137,28 @@ Examples:
             # Create enhanced menu system
             menu_system = SimpleEnhancedMenuSystem()
             
-            # Add initial log message
-            menu_system.log_action("ServerAssistant Enhanced started", "INFO")
-            menu_system.log_action("Docker environment check...", "INFO")
+            # Add initial log messages
+            menu_system.log_action("🚀 ServerAssistant Enhanced started", "INFO")
+            menu_system.log_action("📋 Simple logging system initialized", "INFO")
+            menu_system.log_action("🔍 Docker environment check...", "INFO")
             
             # Check Docker environment
             if server_assistant.check_docker_environment():
-                menu_system.log_action("Docker environment is available", "SUCCESS")
+                menu_system.log_action("✅ Docker environment is available", "SUCCESS")
             else:
-                menu_system.log_action("Docker environment not available", "ERROR")
+                menu_system.log_action("❌ Docker environment not available", "ERROR")
             
             # Create menus
+            menu_system.log_action("📝 Creating menu system...", "INFO")
             menu_system.create_main_menu(server_assistant)
             menu_system.create_service_management_menu(server_assistant)
             menu_system.create_setup_menu(server_assistant)
             menu_system.create_testing_menu(server_assistant)
             
             # Add enhanced logging to service actions
-            menu_system.log_action("Menus created successfully", "INFO")
-            menu_system.log_action("Ready for user interaction", "SUCCESS")
+            menu_system.log_action("✅ Menus created successfully", "SUCCESS")
+            menu_system.log_action("🎯 Ready for user interaction", "SUCCESS")
+            menu_system.log_action("💡 Logs will appear after each action", "INFO")
             
             try:
                 # Start main menu

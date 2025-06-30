@@ -477,9 +477,11 @@ class SimpleEnhancedMenuSystem(MenuSystem):
             
             if choice == "0":
                 if menu_id == "main":
+                    self.log_display.add_log("User chose to exit", "INFO")
                     self.running = False
                 else:
                     # Go back to previous menu
+                    self.log_display.add_log(f"Going back from {menu_id}", "INFO")
                     self.menu_stack.pop()  # Remove current menu from stack
                     if self.menu_stack:
                         # Return to previous menu
@@ -502,7 +504,7 @@ class SimpleEnhancedMenuSystem(MenuSystem):
                     
             if selected_item:
                 # Log the action
-                self.log_display.add_log(f"Executing: {selected_item.label}", "ACTION")
+                self.log_display.add_log(f"User selected: {selected_item.label}", "ACTION")
                 
                 if selected_item.requires_confirmation:
                     confirm = input(f"Are you sure you want to {selected_item.label.lower()}? (y/N): ").strip().lower()
@@ -513,6 +515,7 @@ class SimpleEnhancedMenuSystem(MenuSystem):
                         
                 try:
                     # Execute the action
+                    self.log_display.add_log(f"Executing: {selected_item.label}", "INFO")
                     selected_item.action()
                     self.log_display.add_log(f"Successfully executed: {selected_item.label}", "SUCCESS")
                     # Show logs after action
@@ -520,12 +523,12 @@ class SimpleEnhancedMenuSystem(MenuSystem):
                 except Exception as e:
                     self.log_display.add_log(f"Error executing {selected_item.label}: {e}", "ERROR")
                     DisplayUtils.print_error(f"Error executing action: {e}")
-                    self.log_display.show_logs_after_action(f"Error in {selected_item.label}")
+                    self.log_display.show_logs_after_error(selected_item.label, str(e))
             else:
                 self.log_display.add_log(f"Invalid option selected: {choice}", "WARNING")
                 DisplayUtils.print_warning("Invalid option. Please try again.")
                 self.log_display.show_logs_after_action("Invalid Selection")
-                
+        
     def log_action(self, message: str, level: str = "INFO"):
         """Add a log message"""
         self.log_display.add_log(message, level)
