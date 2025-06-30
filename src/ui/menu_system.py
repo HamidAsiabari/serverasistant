@@ -3,9 +3,12 @@ Menu system for ServerAssistant
 """
 
 from typing import Dict, List, Callable, Any, Optional
-from .display_utils import DisplayUtils, LogPanel, SimpleLogDisplay, RealTimeLogPanel, SplitScreenDisplay
+from .display_utils import DisplayUtils, LogPanel, SimpleLogDisplay, RealTimeLogPanel, BottomLogDisplay
 import threading
 import time
+from datetime import datetime
+from ..core.docker_manager import DockerManager
+from ..core.config_manager import ConfigManager
 
 
 class MenuItem:
@@ -555,12 +558,12 @@ class SimpleEnhancedMenuSystem(MenuSystem):
 
 
 class RealTimeEnhancedMenuSystem(MenuSystem):
-    """Real-time enhanced menu system with persistent right-side log panel"""
+    """Real-time enhanced menu system with persistent bottom log panel"""
     
     def __init__(self):
         super().__init__()
-        self.log_panel = RealTimeLogPanel(max_lines=20)
-        self.split_display = SplitScreenDisplay(self.log_panel)
+        self.log_panel = RealTimeLogPanel(max_lines=30)  # Increased for more debugging
+        self.bottom_display = BottomLogDisplay(self.log_panel)
         self.refresh_thread = None
         self.auto_refresh = True
         
@@ -585,7 +588,7 @@ class RealTimeEnhancedMenuSystem(MenuSystem):
                 break
                 
     def display_menu(self, menu_id: str, title: str):
-        """Display a menu with persistent real-time logs"""
+        """Display a menu with persistent bottom logs"""
         if menu_id not in self.menus:
             DisplayUtils.print_error(f"Menu '{menu_id}' not found")
             return
@@ -612,8 +615,8 @@ class RealTimeEnhancedMenuSystem(MenuSystem):
                     'description': item.description
                 })
             
-            # Display menu with real-time logs
-            self.split_display.print_menu_with_logs(title, menu_items)
+            # Display menu with bottom logs
+            self.bottom_display.print_menu_with_logs(title, menu_items)
             
             # Get user input
             choice = input("\nSelect an option: ").strip()

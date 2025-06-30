@@ -202,15 +202,13 @@ class SimpleSplitScreenDisplay:
 
 
 class RealTimeLogPanel:
-    """Real-time log panel for the right side of the screen"""
+    """Real-time log panel for the bottom of the screen"""
     
-    def __init__(self, max_lines: int = 20):
+    def __init__(self, max_lines: int = 30):  # Increased to 30 lines for more debugging
         self.max_lines = max_lines
         self.log_lines = []
         self.lock = threading.Lock()
         self.terminal_width = self._get_terminal_width()
-        self.menu_width = int(self.terminal_width * 0.6)  # 60% for menu
-        self.log_width = self.terminal_width - self.menu_width - 3  # 3 for separator
         
     def _get_terminal_width(self) -> int:
         """Get terminal width"""
@@ -247,15 +245,15 @@ class RealTimeLogPanel:
         if not logs:
             return ["[No logs available]"]
             
-        # Format logs to fit the log width
+        # Format logs to fit the terminal width
         formatted_logs = []
         for log in logs:
-            if len(log) > self.log_width:
+            if len(log) > self.terminal_width - 4:  # Leave some margin
                 # Split long logs into multiple lines
                 words = log.split()
                 current_line = ""
                 for word in words:
-                    if len(current_line + " " + word) <= self.log_width:
+                    if len(current_line + " " + word) <= self.terminal_width - 4:
                         current_line += (" " + word) if current_line else word
                     else:
                         if current_line:
@@ -269,14 +267,97 @@ class RealTimeLogPanel:
         return formatted_logs
 
 
+class BottomLogDisplay:
+    """Display with logs at the bottom under the select option"""
+    
+    def __init__(self, log_panel: RealTimeLogPanel):
+        self.log_panel = log_panel
+        self.terminal_width = log_panel.terminal_width
+        
+    def clear_screen(self):
+        """Clear the terminal screen"""
+        os.system('cls' if os.name == 'nt' else 'clear')
+        
+    def print_banner(self):
+        """Print application banner"""
+        banner = f"""
+╔══════════════════════════════════════════════════════════════╗
+║                    ServerAssistant v1.0.0                    ║
+║              Terminal-based Server Management                 ║
+╚══════════════════════════════════════════════════════════════╝
+"""
+        print(banner)
+        
+    def print_header(self, text: str):
+        """Print header with decoration"""
+        print("\n" + "="*60)
+        print(f"  {text}")
+        print("="*60)
+        
+    def print_menu_with_logs(self, title: str, menu_items: List[Dict[str, str]], 
+                           current_selection: str = ""):
+        """Print menu with logs at the bottom"""
+        # Clear screen
+        self.clear_screen()
+        
+        # Print banner
+        self.print_banner()
+        
+        # Print title
+        self.print_header(title)
+        
+        # Print menu items
+        for item in menu_items:
+            key = item.get('key', '0')
+            label = item.get('label', 'Unknown')
+            description = item.get('description', '')
+            
+            # Highlight current selection
+            if key == current_selection:
+                print(f"▶ {key}. {label}")
+            else:
+                print(f"  {key}. {label}")
+                
+            if description:
+                print(f"     {description}")
+            print()
+            
+        # Print navigation info
+        print("─" * 60)
+        print("Use number keys to select, 0 to go back")
+        print()
+        
+        # Print logs at the bottom
+        self.print_logs_at_bottom()
+        
+    def print_logs_at_bottom(self):
+        """Print logs at the bottom of the screen"""
+        logs = self.log_panel.get_log_display_lines()
+        
+        if not logs:
+            return
+            
+        # Print separator
+        print("─" * self.terminal_width)
+        print("📋 DEBUG LOGS (Real-time)")
+        print("─" * self.terminal_width)
+        
+        # Print logs
+        for log in logs:
+            print(log)
+            
+        print("─" * self.terminal_width)
+
+
 class SplitScreenDisplay:
     """Split-screen display with persistent right-side log panel"""
     
     def __init__(self, log_panel: RealTimeLogPanel):
         self.log_panel = log_panel
         self.terminal_width = log_panel.terminal_width
-        self.menu_width = log_panel.menu_width
-        self.log_width = log_panel.log_width
+        # Calculate widths for split screen
+        self.menu_width = int(self.terminal_width * 0.6)  # 60% for menu
+        self.log_width = self.terminal_width - self.menu_width - 3  # 3 for separator
         
     def clear_screen(self):
         """Clear the terminal screen"""
