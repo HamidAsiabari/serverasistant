@@ -1,3 +1,7 @@
+# DISABLED - Nginx configuration for app.soject.com with web-app proxy
+# This file is temporarily disabled to prevent nginx startup errors
+# To enable: rename this file to app.soject.com.with-webapp.conf
+
 # Nginx configuration for app.soject.com with web-app proxy
 # This configuration tries to proxy to web-app, with fallback
 
