@@ -215,6 +215,91 @@ restore_stashed_changes() {
     fi
 }
 
+# Function to check and fix virtual environment paths
+check_and_fix_venv_paths() {
+    print_status "Checking virtual environment paths..."
+    
+    # Check if venv directory exists
+    if [[ ! -d "venv" ]]; then
+        print_warning "Virtual environment directory 'venv' not found"
+        return 1
+    fi
+    
+    # Check if activate script exists
+    if [[ ! -f "venv/bin/activate" ]]; then
+        print_error "Virtual environment activate script not found at venv/bin/activate"
+        
+        # Try to find activate script in different locations
+        ACTIVATE_SCRIPTS=$(find venv -name "activate" -type f 2>/dev/null)
+        if [[ -n "$ACTIVATE_SCRIPTS" ]]; then
+            print_status "Found activate scripts in:"
+            echo "$ACTIVATE_SCRIPTS"
+            
+            # Create symlink to standard location
+            ACTIVATE_SCRIPT=$(echo "$ACTIVATE_SCRIPTS" | head -1)
+            print_status "Creating symlink from $ACTIVATE_SCRIPT to venv/bin/activate"
+            mkdir -p venv/bin
+            ln -sf "$ACTIVATE_SCRIPT" venv/bin/activate
+            print_success "Symlink created successfully"
+        else
+            print_error "No activate script found in virtual environment"
+            return 1
+        fi
+    else
+        print_success "Virtual environment activate script found at venv/bin/activate"
+    fi
+    
+    # Check if python executable exists
+    if [[ ! -f "venv/bin/python" ]]; then
+        print_error "Python executable not found at venv/bin/python"
+        
+        # Try to find python executable in different locations
+        PYTHON_EXECUTABLES=$(find venv -name "python*" -type f -executable 2>/dev/null)
+        if [[ -n "$PYTHON_EXECUTABLES" ]]; then
+            print_status "Found Python executables in:"
+            echo "$PYTHON_EXECUTABLES"
+            
+            # Create symlink to standard location
+            PYTHON_EXECUTABLE=$(echo "$PYTHON_EXECUTABLES" | head -1)
+            print_status "Creating symlink from $PYTHON_EXECUTABLE to venv/bin/python"
+            mkdir -p venv/bin
+            ln -sf "$PYTHON_EXECUTABLE" venv/bin/python
+            print_success "Python symlink created successfully"
+        else
+            print_error "No Python executable found in virtual environment"
+            return 1
+        fi
+    else
+        print_success "Python executable found at venv/bin/python"
+    fi
+    
+    # Check if pip executable exists
+    if [[ ! -f "venv/bin/pip" ]]; then
+        print_error "Pip executable not found at venv/bin/pip"
+        
+        # Try to find pip executable in different locations
+        PIP_EXECUTABLES=$(find venv -name "pip*" -type f -executable 2>/dev/null)
+        if [[ -n "$PIP_EXECUTABLES" ]]; then
+            print_status "Found pip executables in:"
+            echo "$PIP_EXECUTABLES"
+            
+            # Create symlink to standard location
+            PIP_EXECUTABLE=$(echo "$PIP_EXECUTABLES" | head -1)
+            print_status "Creating symlink from $PIP_EXECUTABLE to venv/bin/pip"
+            mkdir -p venv/bin
+            ln -sf "$PIP_EXECUTABLE" venv/bin/pip
+            print_success "Pip symlink created successfully"
+        else
+            print_error "No pip executable found in virtual environment"
+            return 1
+        fi
+    else
+        print_success "Pip executable found at venv/bin/pip"
+    fi
+    
+    return 0
+}
+
 # Function to check if virtual environment needs updating
 check_virtual_environment() {
     print_step "5. Checking virtual environment"
@@ -222,17 +307,54 @@ check_virtual_environment() {
     if [[ -d "venv" ]]; then
         print_status "Virtual environment exists"
         
+        # Check and fix virtual environment paths first
+        if ! check_and_fix_venv_paths; then
+            print_error "Virtual environment paths are broken and could not be fixed"
+            echo ""
+            read -p "Do you want to recreate the virtual environment? (y/N): " -n 1 -r
+            echo ""
+            
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                print_status "Removing broken virtual environment..."
+                rm -rf venv
+                print_status "Creating new virtual environment..."
+                python3 -m venv venv
+                
+                # Check if creation was successful
+                if ! check_and_fix_venv_paths; then
+                    print_error "Failed to create virtual environment properly"
+                    return 1
+                fi
+            else
+                print_warning "Skipping virtual environment check due to broken paths"
+                return 0
+            fi
+        fi
+        
         # Check if requirements.txt has changed
         if [[ -f "requirements.txt" ]]; then
             print_status "Checking if Python dependencies need updating..."
             
+            # Check if activate script exists before trying to activate
+            if [[ ! -f "venv/bin/activate" ]]; then
+                print_error "Virtual environment activate script not found even after path fixing"
+                return 1
+            fi
+            
             # Activate virtual environment and check for outdated packages
             source venv/bin/activate
+            
+            # Verify activation
+            if [[ "$VIRTUAL_ENV" == "" ]]; then
+                print_error "Failed to activate virtual environment"
+                return 1
+            fi
             
             # Get list of installed packages
             INSTALLED_PACKAGES=$(pip list --format=freeze)
             
             # Check if any packages from requirements.txt are missing or outdated
+            NEEDS_UPDATE=false
             while IFS= read -r line; do
                 if [[ -n "$line" && ! "$line" =~ ^# ]]; then
                     PACKAGE_NAME=$(echo "$line" | cut -d'=' -f1)
@@ -281,11 +403,18 @@ check_virtual_environment() {
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             print_status "Creating new virtual environment..."
             python3 -m venv venv
-            source venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt
-            deactivate
-            print_success "Virtual environment created successfully"
+            
+            # Check if creation was successful
+            if check_and_fix_venv_paths; then
+                source venv/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                deactivate
+                print_success "Virtual environment created successfully"
+            else
+                print_error "Failed to create virtual environment properly"
+                return 1
+            fi
         fi
     fi
 }
