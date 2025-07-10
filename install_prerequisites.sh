@@ -61,6 +61,22 @@ detect_os() {
     echo "$OS $VER"
 }
 
+# Function to get OS name only
+get_os_name() {
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if [[ -f /etc/os-release ]]; then
+            . /etc/os-release
+            echo "$NAME"
+        else
+            echo "$(uname -s)"
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macOS"
+    else
+        echo "Unknown"
+    fi
+}
+
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -282,6 +298,7 @@ main() {
     
     # Detect OS
     OS_INFO=$(detect_os)
+    OS_NAME=$(get_os_name)
     print_status "Detected OS: $OS_INFO"
     
     # Check if running as root
@@ -299,12 +316,12 @@ main() {
     
     # Install Python if needed
     if ! check_python_version; then
-        if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+        if [[ "$OS_NAME" == *"Ubuntu"* ]] || [[ "$OS_NAME" == *"Debian"* ]]; then
             install_python_ubuntu
-        elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        elif [[ "$OS_NAME" == *"CentOS"* ]] || [[ "$OS_NAME" == *"Red Hat"* ]] || [[ "$OS_NAME" == *"Fedora"* ]]; then
             install_python_centos
         else
-            print_error "Unsupported OS for automatic Python installation: $OS"
+            print_error "Unsupported OS for automatic Python installation: $OS_NAME"
             print_error "Please install Python 3.7+ manually"
             exit 1
         fi
@@ -316,12 +333,12 @@ main() {
     
     # Install Docker if needed
     if ! command_exists docker; then
-        if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+        if [[ "$OS_NAME" == *"Ubuntu"* ]] || [[ "$OS_NAME" == *"Debian"* ]]; then
             install_docker_ubuntu
-        elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]]; then
+        elif [[ "$OS_NAME" == *"CentOS"* ]] || [[ "$OS_NAME" == *"Red Hat"* ]] || [[ "$OS_NAME" == *"Fedora"* ]]; then
             install_docker_centos
         else
-            print_error "Unsupported OS for automatic Docker installation: $OS"
+            print_error "Unsupported OS for automatic Docker installation: $OS_NAME"
             print_error "Please install Docker manually"
             exit 1
         fi
