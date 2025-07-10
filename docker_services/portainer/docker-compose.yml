@@ -24,7 +24,14 @@ services:
     labels:
       - "com.docker.compose.project=portainer"
       - "com.docker.compose.service=portainer"
+    networks:
+      - web_network
 
 volumes:
   portainer_data:
-    driver: local 
+    driver: local
+
+networks:
+  web_network:
+    external: true
+    name: web_network 

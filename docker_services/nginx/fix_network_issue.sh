@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔧 Fixing nginx network issue..."
+echo "🔧 Fixing nginx network issue and domain routing..."
 
 # Check if web_network exists
 if ! docker network ls | grep -q "web_network"; then
@@ -12,6 +12,26 @@ else
     echo "✅ web_network already exists"
 fi
 
+# Restart all services to ensure they're connected to web_network
+echo ""
+echo "🔄 Restarting all services to ensure proper network connectivity..."
+
+# Restart services in order
+services=("mysql" "gitlab" "mail-server" "portainer" "web-app")
+
+for service in "${services[@]}"; do
+    echo "   Restarting $service..."
+    cd "../$service"
+    if [ -f "docker-compose.yml" ]; then
+        docker-compose down
+        docker-compose up -d
+        echo "   ✅ $service restarted"
+    else
+        echo "   ⚠️  $service docker-compose.yml not found"
+    fi
+    cd "../nginx"
+done
+
 # Check if portainer is running and connect it to web_network
 if docker ps | grep -q "portainer"; then
     echo "🔗 Connecting portainer to web_network..."
@@ -19,6 +39,7 @@ if docker ps | grep -q "portainer"; then
 fi
 
 # Now try to start nginx
+echo ""
 echo "🚀 Starting nginx..."
 docker-compose up -d
 
@@ -45,7 +66,8 @@ if docker ps | grep -q "nginx"; then
         echo "✅ Nginx is responding on port 80"
     else
         echo "⚠️  Nginx is not responding on port 80"
-        echo "📋 Check logs: docker-compose logs nginx"
+        echo "📋 Checking logs..."
+        docker-compose logs nginx
     fi
     
 else
@@ -55,4 +77,14 @@ else
 fi
 
 echo ""
-echo "🎉 Network fix complete!" 
+echo "🎉 Network fix complete!"
+echo ""
+echo "📋 Next steps:"
+echo "   1. Run: chmod +x setup_all_domains.sh && ./setup_all_domains.sh"
+echo "   2. Run: chmod +x test_all_domains.sh && ./test_all_domains.sh"
+echo "   3. Test domains in browser:"
+echo "      - http://gitlab.soject.com"
+echo "      - http://docker.soject.com"
+echo "      - http://app.soject.com"
+echo "      - http://admin.soject.com"
+echo "      - http://mail.soject.com" 

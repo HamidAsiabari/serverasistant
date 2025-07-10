@@ -42,6 +42,7 @@ services:
     restart: unless-stopped
     networks:
       - mysql_network
+      - web_network
 
 volumes:
   mysql_data:
@@ -49,4 +50,7 @@ volumes:
 
 networks:
   mysql_network:
-    driver: bridge 
+    driver: bridge
+  web_network:
+    external: true
+    name: web_network 
