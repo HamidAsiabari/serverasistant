@@ -296,6 +296,12 @@ class MenuSystem:
             self.add_menu_item(temp_menu_id, "6", "Fix Network Issue",
                               lambda: self._fix_nginx_network_issue(server_assistant),
                               "Fix nginx network connectivity issues")
+            self.add_menu_item(temp_menu_id, "7", "Fix Nginx Configuration",
+                              lambda: self._fix_nginx_configuration(server_assistant),
+                              "Fix nginx configuration for running services only")
+            self.add_menu_item(temp_menu_id, "8", "Start Minimal Services",
+                              lambda: self._start_minimal_services(server_assistant),
+                              "Start only essential services needed for nginx")
         
         # Display the menu
         self.display_menu(temp_menu_id, f"Service Control - {service_name}")
@@ -426,6 +432,98 @@ class MenuSystem:
                     
         except Exception as e:
             DisplayUtils.print_error(f"Error running network fix script: {e}")
+                
+        input("Press Enter to continue...")
+            
+    def _fix_nginx_configuration(self, server_assistant):
+        """Fix nginx configuration for running services only"""
+        import subprocess
+        import os
+        
+        DisplayUtils.print_header("Fixing Nginx Configuration")
+        
+        # Get the nginx directory path
+        nginx_path = server_assistant.base_path / "docker_services" / "nginx"
+        fix_script_path = nginx_path / "fix_nginx_config.sh"
+        
+        if not fix_script_path.exists():
+            DisplayUtils.print_error(f"Fix script not found: {fix_script_path}")
+            input("Press Enter to continue...")
+            return
+            
+        try:
+            # Make script executable
+            os.chmod(fix_script_path, 0o755)
+            
+            # Run the fix script
+            DisplayUtils.print_info("Running nginx configuration fix script...")
+            result = subprocess.run(
+                [str(fix_script_path)],
+                cwd=nginx_path,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            # Display output
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                DisplayUtils.print_error(f"Script errors: {result.stderr}")
+                
+            if result.returncode == 0:
+                DisplayUtils.print_success("Nginx configuration fix completed successfully!")
+            else:
+                DisplayUtils.print_error(f"Nginx configuration fix failed with return code: {result.returncode}")
+                    
+        except Exception as e:
+            DisplayUtils.print_error(f"Error running nginx configuration fix script: {e}")
+                
+        input("Press Enter to continue...")
+            
+    def _start_minimal_services(self, server_assistant):
+        """Start minimal services needed for nginx"""
+        import subprocess
+        import os
+        
+        DisplayUtils.print_header("Starting Minimal Services")
+        
+        # Get the nginx directory path
+        nginx_path = server_assistant.base_path / "docker_services" / "nginx"
+        start_script_path = nginx_path / "start_minimal_services.sh"
+        
+        if not start_script_path.exists():
+            DisplayUtils.print_error(f"Start script not found: {start_script_path}")
+            input("Press Enter to continue...")
+            return
+            
+        try:
+            # Make script executable
+            os.chmod(start_script_path, 0o755)
+            
+            # Run the start script
+            DisplayUtils.print_info("Starting minimal services...")
+            result = subprocess.run(
+                [str(start_script_path)],
+                cwd=nginx_path,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            # Display output
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                DisplayUtils.print_error(f"Script errors: {result.stderr}")
+                
+            if result.returncode == 0:
+                DisplayUtils.print_success("Minimal services started successfully!")
+            else:
+                DisplayUtils.print_error(f"Failed to start minimal services (return code: {result.returncode})")
+                    
+        except Exception as e:
+            DisplayUtils.print_error(f"Error starting minimal services: {e}")
                 
         input("Press Enter to continue...")
             

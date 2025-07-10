@@ -241,6 +241,21 @@ generate_ssl() {
     fi
 }
 
+# Start minimal services for nginx
+start_minimal_services() {
+    print_status "Starting minimal services for nginx..."
+    
+    if [ -d "docker_services/nginx" ]; then
+        cd docker_services/nginx
+        if [ -f "start_minimal_services.sh" ]; then
+            chmod +x start_minimal_services.sh
+            ./start_minimal_services.sh
+            print_success "Minimal services started"
+        fi
+        cd "$PROJECT_ROOT"
+    fi
+}
+
 # First-time setup
 perform_first_time_setup() {
     print_status "Performing first-time setup..."
@@ -268,6 +283,9 @@ perform_first_time_setup() {
     
     # Generate SSL certificates
     generate_ssl
+    
+    # Start minimal services
+    start_minimal_services
     
     # Mark first-time setup as complete
     echo "$(date): First-time setup completed successfully" > "$FIRST_TIME_FILE"
@@ -310,6 +328,30 @@ main() {
     if check_first_time; then
         print_status "Starting first-time setup..."
         perform_first_time_setup
+    else
+        # Show options for existing setup
+        echo "Previous setup detected. Choose an option:"
+        echo "1. Launch ServerAssistant (default)"
+        echo "2. Start minimal services for nginx"
+        echo "3. Exit"
+        echo ""
+        read -p "Enter your choice (1-3): " choice
+        
+        case $choice in
+            2)
+                print_status "Starting minimal services..."
+                start_minimal_services
+                echo ""
+                print_status "Minimal services started. You can now launch ServerAssistant."
+                ;;
+            3)
+                print_status "Exiting..."
+                exit 0
+                ;;
+            *)
+                print_status "Launching ServerAssistant..."
+                ;;
+        esac
     fi
     
     # Launch ServerAssistant
