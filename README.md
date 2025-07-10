@@ -11,6 +11,10 @@ A comprehensive Python application for managing and running Docker services base
 - Docker and Docker Compose installed
 - Docker daemon running
 
+chmod +x install_prerequisites.sh
+./install_prerequisites.sh
+
+
 ### Installation
 
 #### Linux Ubuntu
