@@ -341,26 +341,33 @@ setup_python_environment() {
         
         # Check if ensurepip is available
         if ! python3 -m ensurepip --help >/dev/null 2>&1; then
-            print_error "ensurepip is not available"
-            print_status "Installing python3-ensurepip package..."
+            print_warning "ensurepip is not available, trying to install it..."
             
-            # Try to install python3-ensurepip
+            # Try to install ensurepip
             if command_exists apt; then
-                PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
-                print_status "Installing python${PYTHON_VERSION}-ensurepip..."
-                sudo apt update
-                sudo apt install -y "python${PYTHON_VERSION}-ensurepip"
-                
-                # Verify installation
-                if ! python3 -m ensurepip --help >/dev/null 2>&1; then
-                    print_error "Failed to install python3-ensurepip package"
-                    print_error "Please install it manually: sudo apt install python3-ensurepip"
-                    return 1
+                # Try different package names for ensurepip
+                print_status "Trying to install python3-ensurepip..."
+                if sudo apt install -y python3-ensurepip 2>/dev/null; then
+                    print_success "python3-ensurepip installed successfully"
+                else
+                    # Try python3-pip-whl (alternative package)
+                    print_status "Trying to install python3-pip-whl..."
+                    if sudo apt install -y python3-pip-whl 2>/dev/null; then
+                        print_success "python3-pip-whl installed successfully"
+                    else
+                        # Try to install pip directly
+                        print_status "Trying to install python3-pip..."
+                        if sudo apt install -y python3-pip 2>/dev/null; then
+                            print_success "python3-pip installed successfully"
+                        else
+                            print_warning "Could not install ensurepip packages"
+                            print_warning "Will try to create virtual environment anyway"
+                        fi
+                    fi
                 fi
             else
-                print_error "Cannot install python3-ensurepip automatically"
-                print_error "Please install it manually for your distribution"
-                return 1
+                print_warning "Cannot install ensurepip automatically"
+                print_warning "Will try to create virtual environment anyway"
             fi
         fi
         
@@ -371,19 +378,49 @@ setup_python_environment() {
             print_success "Virtual environment creation test passed"
             rm -rf "$TEST_VENV_DIR"
         else
-            print_error "Virtual environment creation test failed"
-            print_error "This indicates an issue with python3-venv or ensurepip"
-            return 1
+            print_warning "Standard virtual environment creation failed"
+            print_status "Trying alternative method without ensurepip..."
+            
+            # Try creating virtual environment without pip
+            if python3 -m venv "$TEST_VENV_DIR" --without-pip 2>/dev/null; then
+                print_success "Virtual environment creation without pip passed"
+                rm -rf "$TEST_VENV_DIR"
+                USE_WITHOUT_PIP=true
+            else
+                print_error "Virtual environment creation failed completely"
+                print_error "This indicates a serious issue with python3-venv"
+                return 1
+            fi
         fi
         
         # Create virtual environment
         print_status "Creating virtual environment..."
-        python3 -m venv venv
+        if [[ "$USE_WITHOUT_PIP" == true ]]; then
+            python3 -m venv venv --without-pip
+            print_warning "Virtual environment created without pip"
+            print_status "Will install pip manually after creation"
+        else
+            python3 -m venv venv
+        fi
         
         # Verify the virtual environment was created properly
         if ! check_and_fix_venv_paths; then
             print_error "Failed to create virtual environment properly"
             return 1
+        fi
+        
+        # If virtual environment was created without pip, install pip manually
+        if [[ "$USE_WITHOUT_PIP" == true ]]; then
+            print_status "Installing pip in virtual environment..."
+            source venv/bin/activate
+            
+            # Download and install pip manually
+            curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+            python get-pip.py
+            rm get-pip.py
+            
+            deactivate
+            print_success "Pip installed manually in virtual environment"
         fi
     fi
     
@@ -570,23 +607,52 @@ main() {
     # Check if ensurepip is available (needed for virtual environment creation)
     print_status "Checking ensurepip availability..."
     if ! python3 -m ensurepip --help >/dev/null 2>&1; then
-        print_warning "ensurepip is not available, installing python3-ensurepip..."
+        print_warning "ensurepip is not available, trying to install it..."
         
         if [[ "$OS_NAME" == *"Ubuntu"* ]] || [[ "$OS_NAME" == *"Debian"* ]]; then
+            # Try different package names for ensurepip
             PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
-            print_status "Installing python${PYTHON_VERSION}-ensurepip..."
-            sudo apt update
-            sudo apt install -y "python${PYTHON_VERSION}-ensurepip"
+            
+            # Try python3-ensurepip first
+            print_status "Trying to install python3-ensurepip..."
+            if sudo apt install -y python3-ensurepip 2>/dev/null; then
+                print_success "python3-ensurepip installed successfully"
+            else
+                # Try python3-pip-whl (alternative package)
+                print_status "Trying to install python3-pip-whl..."
+                if sudo apt install -y python3-pip-whl 2>/dev/null; then
+                    print_success "python3-pip-whl installed successfully"
+                else
+                    # Try to install pip directly
+                    print_status "Trying to install pip directly..."
+                    if sudo apt install -y python3-pip 2>/dev/null; then
+                        print_success "python3-pip installed successfully"
+                    else
+                        print_error "Could not install ensurepip or pip packages"
+                        print_error "Trying alternative approach..."
+                        
+                        # Try to install ensurepip using pip
+                        if command_exists pip3; then
+                            print_status "Installing ensurepip using pip3..."
+                            pip3 install --user ensurepip
+                        else
+                            print_error "No pip available, cannot install ensurepip"
+                            print_error "Please install python3-pip manually: sudo apt install python3-pip"
+                            exit 1
+                        fi
+                    fi
+                fi
+            fi
             
             # Verify installation
             if ! python3 -m ensurepip --help >/dev/null 2>&1; then
-                print_error "Failed to install python3-ensurepip package"
-                print_error "Please install it manually: sudo apt install python3-ensurepip"
-                exit 1
+                print_warning "ensurepip still not available, but continuing..."
+                print_warning "Virtual environment creation might fail, but we'll try anyway"
+            else
+                print_success "ensurepip is now available"
             fi
-            print_success "python3-ensurepip installed successfully"
         else
-            print_error "Cannot install python3-ensurepip automatically for $OS_NAME"
+            print_error "Cannot install ensurepip automatically for $OS_NAME"
             print_error "Please install it manually for your distribution"
             exit 1
         fi
