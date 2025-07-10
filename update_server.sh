@@ -63,9 +63,11 @@ check_git_status() {
         echo ""
         
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            print_status "Stashing uncommitted changes..."
-            git stash push -m "Auto-stash before update $(date)"
-            STASHED=true
+            print_status "Stashing by git reset --hard HEAD~1  uncommitted changes..."
+            git reset --hard HEAD~1
+
+            # git stash push -m "Auto-stash before update $(date)"
+            # STASHED=true
         else
             print_error "Cannot proceed with uncommitted changes"
             print_error "Please commit or stash your changes first"
