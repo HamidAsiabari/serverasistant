@@ -101,6 +101,22 @@ install_python_ubuntu() {
     print_status "Installing Python 3.7+ on Ubuntu/Debian..."
     sudo apt update
     sudo apt install -y python3 python3-pip python3-venv python3-dev build-essential
+    
+    # Check if python3-venv is available, if not try version-specific package
+    if ! python3 -m venv --help >/dev/null 2>&1; then
+        print_status "python3-venv not working, trying version-specific package..."
+        PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+        print_status "Installing python${PYTHON_VERSION}-venv..."
+        sudo apt install -y "python${PYTHON_VERSION}-venv"
+        
+        # Verify venv works now
+        if ! python3 -m venv --help >/dev/null 2>&1; then
+            print_error "Failed to install python3-venv package"
+            print_error "Please install it manually: sudo apt install python3-venv"
+            return 1
+        fi
+    fi
+    
     print_success "Python installed successfully"
 }
 
@@ -297,6 +313,33 @@ setup_python_environment() {
     # Create virtual environment if it doesn't exist
     if [[ ! -d "venv" ]]; then
         print_status "Creating new virtual environment..."
+        
+        # Check if python3-venv is available
+        if ! python3 -m venv --help >/dev/null 2>&1; then
+            print_error "python3-venv is not available"
+            print_status "Installing python3-venv package..."
+            
+            # Try to install python3-venv
+            if command_exists apt; then
+                PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+                print_status "Installing python${PYTHON_VERSION}-venv..."
+                sudo apt update
+                sudo apt install -y "python${PYTHON_VERSION}-venv"
+                
+                # Verify installation
+                if ! python3 -m venv --help >/dev/null 2>&1; then
+                    print_error "Failed to install python3-venv package"
+                    print_error "Please install it manually: sudo apt install python3-venv"
+                    return 1
+                fi
+            else
+                print_error "Cannot install python3-venv automatically"
+                print_error "Please install it manually for your distribution"
+                return 1
+            fi
+        fi
+        
+        # Create virtual environment
         python3 -m venv venv
         
         # Verify the virtual environment was created properly
@@ -457,6 +500,33 @@ main() {
         fi
     else
         print_success "Python 3.7+ is already installed: $(python3 --version)"
+    fi
+    
+    # Check if python3-venv is available
+    print_status "Checking python3-venv availability..."
+    if ! python3 -m venv --help >/dev/null 2>&1; then
+        print_warning "python3-venv is not available, installing it..."
+        
+        if [[ "$OS_NAME" == *"Ubuntu"* ]] || [[ "$OS_NAME" == *"Debian"* ]]; then
+            PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+            print_status "Installing python${PYTHON_VERSION}-venv..."
+            sudo apt update
+            sudo apt install -y "python${PYTHON_VERSION}-venv"
+            
+            # Verify installation
+            if ! python3 -m venv --help >/dev/null 2>&1; then
+                print_error "Failed to install python3-venv package"
+                print_error "Please install it manually: sudo apt install python3-venv"
+                exit 1
+            fi
+            print_success "python3-venv installed successfully"
+        else
+            print_error "Cannot install python3-venv automatically for $OS_NAME"
+            print_error "Please install it manually for your distribution"
+            exit 1
+        fi
+    else
+        print_success "python3-venv is available"
     fi
     
     print_step "2. Installing Docker"
