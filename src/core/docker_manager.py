@@ -67,6 +67,30 @@ class DockerManager:
         success, stdout, stderr = self.run_command("docker info")
         return success
         
+    def ensure_networks_exist(self) -> bool:
+        """Ensure required Docker networks exist"""
+        required_networks = [
+            "web_network",
+            "mail_network", 
+            "gitlab_network",
+            "portainer_network",
+            "mysql_network"
+        ]
+        
+        for network in required_networks:
+            # Check if network exists
+            success, stdout, stderr = self.run_command(f"docker network ls | grep -w {network}", check=False)
+            if not success:
+                # Network doesn't exist, create it
+                success, stdout, stderr = self.run_command(f"docker network create {network}")
+                if success:
+                    print(f"Created network: {network}")
+                else:
+                    print(f"Failed to create network: {network}")
+                    return False
+                    
+        return True
+        
     def start_service(self, service_name: str) -> bool:
         """Start a specific service"""
         service = self.services.get(service_name)
@@ -75,6 +99,10 @@ class DockerManager:
             
         service_path = self.base_path / service.path
         if not service_path.exists():
+            return False
+            
+        # Ensure required networks exist before starting service
+        if not self.ensure_networks_exist():
             return False
             
         success, stdout, stderr = self.run_command(

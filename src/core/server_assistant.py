@@ -101,6 +101,12 @@ class ServerAssistant:
         if not self.check_docker_environment():
             return False
             
+        # Ensure required networks exist before starting service
+        self.print_info("Ensuring required networks exist...")
+        if not self.docker_manager.ensure_networks_exist():
+            self.print_error("Failed to create required networks")
+            return False
+            
         if self.docker_manager.start_service(service_name):
             self.print_success(f"Service '{service_name}' started successfully")
             return True
@@ -143,6 +149,12 @@ class ServerAssistant:
         self.print_info("Starting all enabled services...")
         
         if not self.check_docker_environment():
+            return {}
+            
+        # Ensure required networks exist before starting services
+        self.print_info("Ensuring required networks exist...")
+        if not self.docker_manager.ensure_networks_exist():
+            self.print_error("Failed to create required networks")
             return {}
             
         results = self.docker_manager.start_all_services()

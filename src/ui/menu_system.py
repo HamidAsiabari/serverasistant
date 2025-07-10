@@ -291,6 +291,12 @@ class MenuSystem:
                           lambda: server_assistant.health_check_service(service_name),
                           f"Perform health check on {service_name}")
         
+        # Add special network fix option for nginx
+        if service_name == "nginx":
+            self.add_menu_item(temp_menu_id, "6", "Fix Network Issue",
+                              lambda: self._fix_nginx_network_issue(server_assistant),
+                              "Fix nginx network connectivity issues")
+        
         # Display the menu
         self.display_menu(temp_menu_id, f"Service Control - {service_name}")
         
@@ -376,6 +382,52 @@ class MenuSystem:
         # Clean up temporary menu
         if temp_menu_id in self.menus:
             del self.menus[temp_menu_id]
+            
+    def _fix_nginx_network_issue(self, server_assistant):
+        """Fix nginx network issue by running the fix script"""
+        import subprocess
+        import os
+        
+        DisplayUtils.print_header("Fixing Nginx Network Issue")
+        
+        # Get the nginx directory path
+        nginx_path = server_assistant.base_path / "docker_services" / "nginx"
+        fix_script_path = nginx_path / "fix_network_issue.sh"
+        
+        if not fix_script_path.exists():
+            DisplayUtils.print_error(f"Fix script not found: {fix_script_path}")
+            input("Press Enter to continue...")
+            return
+            
+        try:
+            # Make script executable
+            os.chmod(fix_script_path, 0o755)
+            
+            # Run the fix script
+            DisplayUtils.print_info("Running network fix script...")
+            result = subprocess.run(
+                [str(fix_script_path)],
+                cwd=nginx_path,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            # Display output
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                DisplayUtils.print_error(f"Script errors: {result.stderr}")
+                
+            if result.returncode == 0:
+                DisplayUtils.print_success("Network fix completed successfully!")
+            else:
+                DisplayUtils.print_error(f"Network fix failed with return code: {result.returncode}")
+                    
+        except Exception as e:
+            DisplayUtils.print_error(f"Error running network fix script: {e}")
+                
+        input("Press Enter to continue...")
             
     # Placeholder methods for other menu actions
     def _install_dependencies(self, server_assistant):
