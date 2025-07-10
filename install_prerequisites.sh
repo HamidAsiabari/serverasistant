@@ -339,7 +339,45 @@ setup_python_environment() {
             fi
         fi
         
+        # Check if ensurepip is available
+        if ! python3 -m ensurepip --help >/dev/null 2>&1; then
+            print_error "ensurepip is not available"
+            print_status "Installing python3-ensurepip package..."
+            
+            # Try to install python3-ensurepip
+            if command_exists apt; then
+                PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+                print_status "Installing python${PYTHON_VERSION}-ensurepip..."
+                sudo apt update
+                sudo apt install -y "python${PYTHON_VERSION}-ensurepip"
+                
+                # Verify installation
+                if ! python3 -m ensurepip --help >/dev/null 2>&1; then
+                    print_error "Failed to install python3-ensurepip package"
+                    print_error "Please install it manually: sudo apt install python3-ensurepip"
+                    return 1
+                fi
+            else
+                print_error "Cannot install python3-ensurepip automatically"
+                print_error "Please install it manually for your distribution"
+                return 1
+            fi
+        fi
+        
+        # Test virtual environment creation first
+        print_status "Testing virtual environment creation..."
+        TEST_VENV_DIR="/tmp/test_venv_$$"
+        if python3 -m venv "$TEST_VENV_DIR" 2>/dev/null; then
+            print_success "Virtual environment creation test passed"
+            rm -rf "$TEST_VENV_DIR"
+        else
+            print_error "Virtual environment creation test failed"
+            print_error "This indicates an issue with python3-venv or ensurepip"
+            return 1
+        fi
+        
         # Create virtual environment
+        print_status "Creating virtual environment..."
         python3 -m venv venv
         
         # Verify the virtual environment was created properly
@@ -527,6 +565,33 @@ main() {
         fi
     else
         print_success "python3-venv is available"
+    fi
+    
+    # Check if ensurepip is available (needed for virtual environment creation)
+    print_status "Checking ensurepip availability..."
+    if ! python3 -m ensurepip --help >/dev/null 2>&1; then
+        print_warning "ensurepip is not available, installing python3-ensurepip..."
+        
+        if [[ "$OS_NAME" == *"Ubuntu"* ]] || [[ "$OS_NAME" == *"Debian"* ]]; then
+            PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+            print_status "Installing python${PYTHON_VERSION}-ensurepip..."
+            sudo apt update
+            sudo apt install -y "python${PYTHON_VERSION}-ensurepip"
+            
+            # Verify installation
+            if ! python3 -m ensurepip --help >/dev/null 2>&1; then
+                print_error "Failed to install python3-ensurepip package"
+                print_error "Please install it manually: sudo apt install python3-ensurepip"
+                exit 1
+            fi
+            print_success "python3-ensurepip installed successfully"
+        else
+            print_error "Cannot install python3-ensurepip automatically for $OS_NAME"
+            print_error "Please install it manually for your distribution"
+            exit 1
+        fi
+    else
+        print_success "ensurepip is available"
     fi
     
     print_step "2. Installing Docker"
