@@ -24,9 +24,16 @@ git clone <repository-url>
 cd serverasistant
 
 in server if change happened in code: 
+chmod +x update_server.sh
+./update_server.sh
+
+
+
+=======or
 git reset --hard HEAD~1
 git pull
 
+chmod +x install_prerequisites.sh
 chmod +x setup.sh
 chmod +x scripts/startup/setup.sh
 chmod +x scripts/startup/*.sh
