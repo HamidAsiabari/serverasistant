@@ -905,11 +905,17 @@ exit
                     DisplayUtils.print_error("❌ Failed to start nginx")
                     return
             
-            # Generate certificate using certbot
-            DisplayUtils.print_info("📝 Generating certificate with certbot...")
+            # Generate certificate using certbot (standalone method)
+            DisplayUtils.print_info("📝 Generating certificate with certbot (standalone method)...")
+            
+            # Stop nginx temporarily to free up port 80
+            DisplayUtils.print_info("🛑 Stopping nginx temporarily to free port 80...")
+            if not server_assistant.stop_service("nginx"):
+                DisplayUtils.print_error("❌ Failed to stop nginx. Cannot proceed with certificate generation.")
+                return
+            
             certbot_cmd = [
-                'certbot', 'certonly', '--webroot',
-                '-w', '/var/www/html',
+                'certbot', 'certonly', '--standalone',
                 '-d', 'gitlab.soject.com',
                 '--non-interactive',
                 '--agree-tos',
@@ -925,11 +931,24 @@ exit
                 # Copy certificates to nginx ssl directory
                 self._copy_certificates_to_nginx(server_assistant)
                 
+                # Restart nginx
+                DisplayUtils.print_info("🔄 Restarting nginx...")
+                if server_assistant.start_service("nginx"):
+                    DisplayUtils.print_success("✅ Nginx restarted successfully!")
+                else:
+                    DisplayUtils.print_warning("⚠️  Failed to restart nginx. Please restart manually.")
+                
             else:
                 DisplayUtils.print_error(f"❌ Failed to generate certificate: {result.stderr}")
+                # Restart nginx even if certificate generation failed
+                DisplayUtils.print_info("🔄 Restarting nginx after failed certificate generation...")
+                server_assistant.start_service("nginx")
                 
         except Exception as e:
             DisplayUtils.print_error(f"❌ Error generating certificate: {e}")
+            # Restart nginx on any error
+            DisplayUtils.print_info("🔄 Restarting nginx after error...")
+            server_assistant.start_service("nginx")
     
     def _configure_gitlab_https(self, server_assistant):
         """Configure nginx for HTTPS with HTTP to HTTPS redirect"""
@@ -1304,33 +1323,25 @@ echo "$(date): GitLab certificate renewed" >> /var/log/gitlab-cert-renewal.log
         
         try:
             # Step 1: Install certbot
-            DisplayUtils.print_info("📋 Step 1/6: Installing certbot...")
+            DisplayUtils.print_info("📋 Step 1/5: Installing certbot...")
             if not self._install_certbot(server_assistant):
                 DisplayUtils.print_error("❌ Failed to install certbot. Cannot proceed with SSL setup.")
                 return
             
             # Step 2: Check requirements
-            DisplayUtils.print_info("📋 Step 2/6: Checking system requirements...")
+            DisplayUtils.print_info("📋 Step 2/5: Checking system requirements...")
             self._check_ssl_requirements(server_assistant)
             
-            # Step 3: Start nginx if needed
-            DisplayUtils.print_info("📋 Step 3/6: Ensuring nginx is running...")
-            if not server_assistant.get_service_status("nginx"):
-                DisplayUtils.print_info("Starting nginx...")
-                if not server_assistant.start_service("nginx"):
-                    DisplayUtils.print_error("❌ Failed to start nginx. Cannot proceed.")
-                    return
-            
-            # Step 4: Generate certificate
-            DisplayUtils.print_info("📋 Step 4/6: Generating SSL certificate...")
+            # Step 3: Generate certificate
+            DisplayUtils.print_info("📋 Step 3/5: Generating SSL certificate...")
             self._generate_gitlab_ssl_certificate(server_assistant)
             
-            # Step 5: Configure HTTPS
-            DisplayUtils.print_info("📋 Step 5/6: Configuring HTTPS...")
+            # Step 4: Configure HTTPS
+            DisplayUtils.print_info("📋 Step 4/5: Configuring HTTPS...")
             self._configure_gitlab_https(server_assistant)
             
-            # Step 6: Setup auto-renewal
-            DisplayUtils.print_info("📋 Step 6/6: Setting up auto-renewal...")
+            # Step 5: Setup auto-renewal
+            DisplayUtils.print_info("📋 Step 5/5: Setting up auto-renewal...")
             self._setup_auto_renewal(server_assistant)
             
             DisplayUtils.print_success("🎉 Complete GitLab SSL setup finished!")

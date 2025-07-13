@@ -177,32 +177,11 @@ start_nginx() {
     fi
 }
 
-# Create webroot directory for certbot
+# Create webroot directory for certbot (deprecated - using standalone method)
 setup_webroot() {
     print_status "Setting up webroot for certbot..."
-    
-    # Create webroot directory
-    sudo mkdir -p /var/www/html
-    
-    # Create a simple index.html for verification
-    sudo tee /var/www/html/index.html > /dev/null << 'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>GitLab SSL Verification</title>
-</head>
-<body>
-    <h1>GitLab SSL Certificate Verification</h1>
-    <p>This page is used by Let's Encrypt to verify domain ownership.</p>
-</body>
-</html>
-EOF
-    
-    # Set proper permissions
-    sudo chown -R www-data:www-data /var/www/html
-    sudo chmod -R 755 /var/www/html
-    
-    print_success "Webroot setup complete"
+    print_warning "Webroot method is deprecated. Using standalone method instead."
+    print_success "Webroot setup skipped (using standalone method)"
 }
 
 # Generate SSL certificate
@@ -510,36 +489,32 @@ complete_ssl_setup() {
     print_status "Running complete SSL setup for ${DOMAIN}..."
     
     # Step 1: Install certbot
-    print_status "Step 1/7: Installing certbot..."
+    print_status "Step 1/6: Installing certbot..."
     if ! check_certbot; then
         install_certbot
     fi
     
     # Step 2: Check requirements
-    print_status "Step 2/7: Checking system requirements..."
+    print_status "Step 2/6: Checking system requirements..."
     check_requirements
     
     # Step 3: Start nginx if needed
-    print_status "Step 3/7: Ensuring nginx is running..."
+    print_status "Step 3/6: Ensuring nginx is running..."
     if ! docker ps --format "{{.Names}}" | grep -q "^nginx$"; then
         start_nginx
     fi
     
-    # Step 4: Setup webroot
-    print_status "Step 4/7: Setting up webroot..."
-    setup_webroot
-    
-    # Step 5: Generate certificate
-    print_status "Step 5/7: Generating SSL certificate..."
+    # Step 4: Generate certificate
+    print_status "Step 4/6: Generating SSL certificate..."
     generate_certificate
     
-    # Step 6: Configure HTTPS
-    print_status "Step 6/7: Configuring HTTPS..."
+    # Step 5: Configure HTTPS
+    print_status "Step 5/6: Configuring HTTPS..."
     copy_certificates
     create_https_config
     
-    # Step 7: Setup auto-renewal
-    print_status "Step 7/7: Setting up auto-renewal..."
+    # Step 6: Setup auto-renewal
+    print_status "Step 6/6: Setting up auto-renewal..."
     setup_auto_renewal
     
     # Reload nginx
