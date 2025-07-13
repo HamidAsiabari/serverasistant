@@ -48,8 +48,20 @@ services:
       - SA_TAG=2.0
       - SA_TAG2=6.31
       - SA_KILL=6.31
+      # Add SpamAssassin optimizations
+      - SA_MAX_CHILDREN=2
+      - SA_ALLOWTOLD=1
     networks:
       - mail_network
+    # Add resource limits for SpamAssassin
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   roundcube:
     image: roundcube/roundcubemail:latest

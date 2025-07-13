@@ -8,6 +8,16 @@ services:
       POSTGRES_DB: myapp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+      # PostgreSQL performance optimizations
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 4MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_AUTOVACUUM_MAX_WORKERS: 2
+      POSTGRES_AUTOVACUUM_NAPTIME: 60
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_MAX_CONNECTIONS: 50
     ports:
       - "5432:5432"
     volumes:
@@ -16,10 +26,19 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
+      interval: 120s
       timeout: 10s
-      retries: 3
+      retries: 2
       start_period: 40s
+    # Add resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   redis:
     image: redis:7-alpine
@@ -33,10 +52,19 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
+      interval: 120s
       timeout: 10s
-      retries: 3
+      retries: 2
       start_period: 30s
+    # Add resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 volumes:
   postgres_data:

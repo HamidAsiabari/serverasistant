@@ -10,6 +10,12 @@ services:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://gitlab.soject.com'
         gitlab_rails['gitlab_shell_ssh_port'] = 2224
+        # Add GitLab resource optimizations
+        unicorn['worker_processes'] = 2
+        unicorn['worker_timeout'] = 60
+        postgresql['shared_buffers'] = "256MB"
+        redis['maxmemory'] = "256MB"
+        redis['maxmemory_policy'] = "allkeys-lru"
     ports:
       - '8081:80'      # Web UI
       - '443:443'      # HTTPS (optional, can be mapped)
@@ -31,6 +37,15 @@ services:
     networks:
       - gitlab_network
       - web_network
+    # Add resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
 
   redis:
     image: redis:7-alpine
@@ -40,6 +55,15 @@ services:
       - ./gitlab/redis:/data
     networks:
       - gitlab_network
+    # Add resource limits for Redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   postgres:
     image: postgres:15
@@ -49,10 +73,24 @@ services:
       POSTGRES_DB: gitlabhq_production
       POSTGRES_USER: gitlab
       POSTGRES_PASSWORD: gitlabpass
+      # Add PostgreSQL optimizations
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 4MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
     volumes:
       - ./gitlab/postgres:/var/lib/postgresql/data
     networks:
       - gitlab_network
+    # Add resource limits for PostgreSQL
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
 volumes:
   gitlab_config:

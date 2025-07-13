@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-lightweight
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      # Minimal PostgreSQL configuration
+      POSTGRES_SHARED_BUFFERS: 128MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 512MB
+      POSTGRES_WORK_MEM: 2MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 32MB
+      POSTGRES_AUTOVACUUM_MAX_WORKERS: 1
+      POSTGRES_AUTOVACUUM_NAPTIME: 120
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 8MB
+      POSTGRES_MAX_CONNECTIONS: 20
+      # Disable expensive features
+      POSTGRES_FULL_PAGE_WRITES: "off"
+      POSTGRES_SYNCHRONOUS_COMMIT: "off"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 300s
+      timeout: 10s
+      retries: 2
+      start_period: 60s
+    # Minimal resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-lightweight
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server 
+      --maxmemory 128mb 
+      --maxmemory-policy allkeys-lru 
+      --save 900 1 
+      --save 300 10 
+      --save 60 10000 
+      --appendonly no 
+      --hz 5 
+      --maxclients 20
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 300s
+      timeout: 10s
+      retries: 2
+      start_period: 30s
+    # Minimal resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+volumes:
+  postgres_data:
+  redis_data: 
