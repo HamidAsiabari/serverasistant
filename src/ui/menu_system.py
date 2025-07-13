@@ -537,321 +537,221 @@ class MenuSystem:
         input("Press Enter to continue...")
             
     def _fix_gitlab_password(self, server_assistant):
-        """Fix GitLab password issue by running the fix script"""
+        """Fix GitLab password issue using Python implementation"""
         import subprocess
         import os
         
         DisplayUtils.print_header("Fixing GitLab Password Issue")
         
-        # Get the gitlab directory path
-        gitlab_path = server_assistant.base_path / "docker_services" / "gitlab"
-        fix_script_path = gitlab_path / "fix_gitlab_password.sh"
-        
-        if not fix_script_path.exists():
-            DisplayUtils.print_error(f"Fix script not found: {fix_script_path}")
-            DisplayUtils.print_info("Creating the fix script...")
-            
-            # Create the fix script if it doesn't exist
-            self._create_gitlab_password_fix_script(gitlab_path)
-            
         try:
-            # Make script executable
-            os.chmod(fix_script_path, 0o755)
-            
-            # Run the fix script
-            DisplayUtils.print_info("Running GitLab password fix script...")
+            # Check if GitLab container is running
+            DisplayUtils.print_info("Checking if GitLab container is running...")
             result = subprocess.run(
-                [str(fix_script_path)],
-                cwd=gitlab_path,
+                ["docker", "ps", "--format", "{{.Names}}"],
                 capture_output=True,
                 text=True,
                 check=False
             )
             
-            # Display output
+            if "gitlab" not in result.stdout:
+                DisplayUtils.print_error("GitLab container is not running!")
+                DisplayUtils.print_info("Please start GitLab first:")
+                DisplayUtils.print_info("  cd docker_services/gitlab")
+                DisplayUtils.print_info("  docker-compose up -d")
+                input("Press Enter to continue...")
+                return
+            
+            DisplayUtils.print_success("GitLab container is running")
+            
+            # Method 1: Find the initial password from logs
+            DisplayUtils.print_info("Method 1: Finding initial password from logs...")
+            print()
+            
+            # Look for the password in GitLab logs
+            result = subprocess.run(
+                ["docker", "logs", "gitlab"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            if result.stdout:
+                # Search for password in logs
+                lines = result.stdout.split('\n')
+                password_lines = [line for line in lines if 'password:' in line.lower()]
+                
+                if password_lines:
+                    DisplayUtils.print_success("Found password in logs!")
+                    print(f"Password line: {password_lines[-1]}")
+                    print()
+                    print("Try logging in with:")
+                    print("  Username: root")
+                    print("  Password: (from the log line above)")
+                    print()
+                else:
+                    DisplayUtils.print_warning("No password found in logs")
+            else:
+                DisplayUtils.print_warning("No logs available")
+            
+            # Method 2: Check if GitLab is fully initialized
+            DisplayUtils.print_info("Method 2: Checking GitLab initialization status...")
+            print()
+            
+            # Check GitLab health
+            result = subprocess.run(
+                ["docker", "exec", "gitlab", "/opt/gitlab/bin/gitlab-healthcheck", "--fail"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            if result.returncode == 0:
+                DisplayUtils.print_success("GitLab is healthy and fully initialized")
+            else:
+                DisplayUtils.print_warning("GitLab is still initializing...")
+                print("This can take 5-10 minutes on first startup")
+                print("Please wait and try again later")
+                print()
+            
+            # Method 3: Reset root password options
+            DisplayUtils.print_info("Method 3: Reset root password (if needed)...")
+            print()
+            
+            print("If you need to reset the root password, you can:")
+            print()
+            print("Option A: Use GitLab's built-in password reset")
+            print("  1. Go to http://gitlab.soject.com/users/password/new")
+            print("  2. Enter 'root' as the email")
+            print("  3. Check the logs for the reset email:")
+            print("     docker logs gitlab | grep -i 'reset'")
+            print()
+            
+            print("Option B: Reset password via Rails console")
+            print("  1. Execute this command:")
+            print("     docker exec -it gitlab gitlab-rails console -e production")
+            print("  2. In the Rails console, run:")
+            print("     user = User.find_by_username('root')")
+            print("     user.password = 'your_new_password'")
+            print("     user.password_confirmation = 'your_new_password'")
+            print("     user.save!")
+            print("     exit")
+            print()
+            
+            print("Option C: Use the Quick Password Reset option in this menu")
+            print()
+            
+            # Method 4: Check for common issues
+            DisplayUtils.print_info("Method 4: Checking for common issues...")
+            print()
+            
+            # Check if GitLab is accessible
+            try:
+                import urllib.request
+                response = urllib.request.urlopen('http://localhost:8081', timeout=5)
+                DisplayUtils.print_success("GitLab is accessible on localhost:8081")
+            except:
+                DisplayUtils.print_warning("GitLab is not accessible on localhost:8081")
+                print("This might indicate an initialization issue")
+            
+            # Check recent logs for errors
+            DisplayUtils.print_info("Recent GitLab logs (last 20 lines):")
+            print()
+            
+            result = subprocess.run(
+                ["docker", "logs", "gitlab", "--tail", "20"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
             if result.stdout:
                 print(result.stdout)
-            if result.stderr:
-                DisplayUtils.print_error(f"Script errors: {result.stderr}")
-                
-            if result.returncode == 0:
-                DisplayUtils.print_success("GitLab password fix completed successfully!")
             else:
-                DisplayUtils.print_error(f"GitLab password fix failed with return code: {result.returncode}")
+                print("No recent logs available")
+            print()
+            
+            DisplayUtils.print_success("Password fix script completed!")
+            print()
+            print("Next steps:")
+            print("1. Try the password from the logs (Method 1)")
+            print("2. If that doesn't work, wait for GitLab to fully initialize")
+            print("3. Use one of the reset options (Method 3) if needed")
+            print("4. Check the logs for any error messages")
                     
         except Exception as e:
-            DisplayUtils.print_error(f"Error running GitLab password fix script: {e}")
+            DisplayUtils.print_error(f"Error during GitLab password fix: {e}")
                 
         input("Press Enter to continue...")
             
     def _quick_reset_gitlab_password(self, server_assistant):
-        """Quickly reset GitLab root password"""
+        """Quickly reset GitLab root password using Python implementation"""
         import subprocess
         import os
+        import getpass
         
         DisplayUtils.print_header("Quick GitLab Password Reset")
         
-        # Get the gitlab directory path
-        gitlab_path = server_assistant.base_path / "docker_services" / "gitlab"
-        reset_script_path = gitlab_path / "quick_reset_password.sh"
-        
-        if not reset_script_path.exists():
-            DisplayUtils.print_error(f"Reset script not found: {reset_script_path}")
-            DisplayUtils.print_info("Creating the reset script...")
-            
-            # Create the reset script if it doesn't exist
-            self._create_gitlab_quick_reset_script(gitlab_path)
-            
         try:
-            # Make script executable
-            os.chmod(reset_script_path, 0o755)
-            
-            # Run the reset script
-            DisplayUtils.print_info("Running GitLab password reset script...")
+            # Check if GitLab container is running
+            DisplayUtils.print_info("Checking if GitLab container is running...")
             result = subprocess.run(
-                [str(reset_script_path)],
-                cwd=gitlab_path,
+                ["docker", "ps", "--format", "{{.Names}}"],
                 capture_output=True,
                 text=True,
                 check=False
             )
             
-            # Display output
-            if result.stdout:
-                print(result.stdout)
-            if result.stderr:
-                DisplayUtils.print_error(f"Script errors: {result.stderr}")
-                
-            if result.returncode == 0:
-                DisplayUtils.print_success("GitLab password reset completed successfully!")
-            else:
-                DisplayUtils.print_error(f"GitLab password reset failed with return code: {result.returncode}")
-                    
-        except Exception as e:
-            DisplayUtils.print_error(f"Error running GitLab password reset script: {e}")
-                
-        input("Press Enter to continue...")
+            if "gitlab" not in result.stdout:
+                DisplayUtils.print_error("GitLab container is not running!")
+                DisplayUtils.print_info("Please start GitLab first:")
+                DisplayUtils.print_info("  cd docker_services/gitlab")
+                DisplayUtils.print_info("  docker-compose up -d")
+                input("Press Enter to continue...")
+                return
             
-    def _create_gitlab_password_fix_script(self, gitlab_path):
-        """Create the GitLab password fix script if it doesn't exist"""
-        script_content = '''#!/bin/bash
-
-# GitLab Password Fix Script
-# This script helps fix GitLab login issues by finding the initial password or resetting it
-
-set -e
-
-echo "=== GitLab Password Fix Script ==="
-
-# Colors for output
-RED='\\033[0;31m'
-GREEN='\\033[0;32m'
-YELLOW='\\033[1;33m'
-BLUE='\\033[0;34m'
-NC='\\033[0m' # No Color
-
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if GitLab container is running
-if ! docker ps | grep -q "gitlab"; then
-    print_error "GitLab container is not running!"
-    echo "Please start GitLab first:"
-    echo "  cd docker_services/gitlab"
-    echo "  docker-compose up -d"
-    exit 1
-fi
-
-print_status "GitLab container is running"
-
-# Method 1: Find the initial password from logs
-print_status "Method 1: Finding initial password from logs..."
-echo ""
-
-# Look for the password in GitLab logs
-PASSWORD_FROM_LOGS=$(docker logs gitlab 2>&1 | grep -i "password:" | tail -1)
-
-if [ -n "$PASSWORD_FROM_LOGS" ]; then
-    print_success "Found password in logs!"
-    echo "Password line: $PASSWORD_FROM_LOGS"
-    echo ""
-    echo "Try logging in with:"
-    echo "  Username: root"
-    echo "  Password: (from the log line above)"
-    echo ""
-else
-    print_warning "No password found in logs"
-fi
-
-# Method 2: Check if GitLab is fully initialized
-print_status "Method 2: Checking GitLab initialization status..."
-echo ""
-
-# Check GitLab health
-if docker exec gitlab /opt/gitlab/bin/gitlab-healthcheck --fail > /dev/null 2>&1; then
-    print_success "GitLab is healthy and fully initialized"
-else
-    print_warning "GitLab is still initializing..."
-    echo "This can take 5-10 minutes on first startup"
-    echo "Please wait and try again later"
-    echo ""
-fi
-
-# Method 3: Reset root password
-print_status "Method 3: Reset root password (if needed)..."
-echo ""
-
-echo "If you need to reset the root password, you can:"
-echo ""
-echo "Option A: Use GitLab\\'s built-in password reset"
-echo "  1. Go to http://gitlab.soject.com/users/password/new"
-echo "  2. Enter \\'root\\' as the email"
-echo "  3. Check the logs for the reset email:"
-echo "     docker logs gitlab | grep -i \\'reset\\'"
-echo ""
-
-echo "Option B: Reset password via Rails console"
-echo "  1. Execute this command:"
-echo "     docker exec -it gitlab gitlab-rails console -e production"
-echo "  2. In the Rails console, run:"
-echo "     user = User.find_by_username(\\'root\\')"
-echo "     user.password = \\'your_new_password\\'"
-echo "     user.password_confirmation = \\'your_new_password\\'"
-echo "     user.save!"
-echo "     exit"
-echo ""
-
-echo "Option C: Use the quick reset script"
-echo "  Run: ./quick_reset_password.sh"
-echo ""
-
-# Method 4: Check for common issues
-print_status "Method 4: Checking for common issues..."
-echo ""
-
-# Check if GitLab is accessible
-if curl -s http://localhost:8081 > /dev/null 2>&1; then
-    print_success "GitLab is accessible on localhost:8081"
-else
-    print_warning "GitLab is not accessible on localhost:8081"
-    echo "This might indicate an initialization issue"
-fi
-
-# Check recent logs for errors
-print_status "Recent GitLab logs (last 20 lines):"
-echo ""
-docker logs gitlab --tail 20
-echo ""
-
-print_success "Password fix script completed!"
-echo ""
-echo "Next steps:"
-echo "1. Try the password from the logs (Method 1)"
-echo "2. If that doesn\\'t work, wait for GitLab to fully initialize"
-echo "3. Use one of the reset options (Method 3) if needed"
-echo "4. Check the logs for any error messages"
-'''
-        
-        script_path = gitlab_path / "fix_gitlab_password.sh"
-        with open(script_path, 'w') as f:
-            f.write(script_content)
-        
-        DisplayUtils.print_success(f"Created GitLab password fix script: {script_path}")
-        
-    def _create_gitlab_quick_reset_script(self, gitlab_path):
-        """Create the GitLab quick reset script if it doesn't exist"""
-        script_content = '''#!/bin/bash
-
-# Quick GitLab Password Reset Script
-# This script quickly resets the GitLab root password
-
-set -e
-
-echo "=== Quick GitLab Password Reset ==="
-
-# Colors for output
-RED='\\033[0;31m'
-GREEN='\\033[0;32m'
-YELLOW='\\033[1;33m'
-BLUE='\\033[0;34m'
-NC='\\033[0m' # No Color
-
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if GitLab container is running
-if ! docker ps | grep -q "gitlab"; then
-    print_error "GitLab container is not running!"
-    echo "Please start GitLab first:"
-    echo "  cd docker_services/gitlab"
-    echo "  docker-compose up -d"
-    exit 1
-fi
-
-# Check if GitLab is healthy
-print_status "Checking GitLab health..."
-if ! docker exec gitlab /opt/gitlab/bin/gitlab-healthcheck --fail > /dev/null 2>&1; then
-    print_warning "GitLab is not fully initialized yet"
-    echo "Please wait for GitLab to finish initializing (5-10 minutes)"
-    echo "You can check the status with: docker logs gitlab"
-    exit 1
-fi
-
-print_success "GitLab is healthy"
-
-# Prompt for new password
-echo ""
-echo "Enter the new password for GitLab root user:"
-read -s NEW_PASSWORD
-
-if [ -z "$NEW_PASSWORD" ]; then
-    print_error "Password cannot be empty"
-    exit 1
-fi
-
-echo ""
-echo "Confirm the new password:"
-read -s CONFIRM_PASSWORD
-
-if [ "$NEW_PASSWORD" != "$CONFIRM_PASSWORD" ]; then
-    print_error "Passwords do not match"
-    exit 1
-fi
-
-print_status "Resetting GitLab root password..."
-
-# Create a temporary script to run in the Rails console
-cat > /tmp/gitlab_password_reset.rb << EOF
-user = User.find_by_username('root')
+            # Check if GitLab is healthy
+            DisplayUtils.print_info("Checking GitLab health...")
+            result = subprocess.run(
+                ["docker", "exec", "gitlab", "/opt/gitlab/bin/gitlab-healthcheck", "--fail"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            if result.returncode != 0:
+                DisplayUtils.print_warning("GitLab is not fully initialized yet")
+                print("Please wait for GitLab to finish initializing (5-10 minutes)")
+                print("You can check the status with: docker logs gitlab")
+                input("Press Enter to continue...")
+                return
+            
+            DisplayUtils.print_success("GitLab is healthy")
+            
+            # Prompt for new password
+            print()
+            print("Enter the new password for GitLab root user:")
+            new_password = getpass.getpass("Password: ")
+            
+            if not new_password:
+                DisplayUtils.print_error("Password cannot be empty")
+                input("Press Enter to continue...")
+                return
+            
+            print("Confirm the new password:")
+            confirm_password = getpass.getpass("Confirm Password: ")
+            
+            if new_password != confirm_password:
+                DisplayUtils.print_error("Passwords do not match")
+                input("Press Enter to continue...")
+                return
+            
+            DisplayUtils.print_info("Resetting GitLab root password...")
+            
+            # Create Rails console commands
+            rails_commands = f"""user = User.find_by_username('root')
 if user
-  user.password = '$NEW_PASSWORD'
-  user.password_confirmation = '$NEW_PASSWORD'
+  user.password = '{new_password}'
+  user.password_confirmation = '{new_password}'
   if user.save!
     puts "SUCCESS: Root password has been reset"
   else
@@ -862,36 +762,60 @@ else
   puts "ERROR: Root user not found"
 end
 exit
-EOF
+"""
+            
+            # Execute the password reset
+            DisplayUtils.print_info("Executing password reset...")
+            
+            # Write commands to a temporary file
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.rb', delete=False) as temp_file:
+                temp_file.write(rails_commands)
+                temp_file_path = temp_file.name
+            
+            try:
+                # Run the Rails console with the commands
+                result = subprocess.run(
+                    ["docker", "exec", "-i", "gitlab", "gitlab-rails", "console", "-e", "production"],
+                    input=rails_commands,
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                
+                # Display output
+                if result.stdout:
+                    print(result.stdout)
+                if result.stderr:
+                    DisplayUtils.print_error(f"Rails console errors: {result.stderr}")
+                
+                if result.returncode == 0 and "SUCCESS" in result.stdout:
+                    DisplayUtils.print_success("Password reset completed!")
+                    print()
+                    print("You can now login to GitLab with:")
+                    print("  Username: root")
+                    print("  Password: (the password you just set)")
+                    print()
+                    print("URL: http://gitlab.soject.com")
+                else:
+                    DisplayUtils.print_error("Password reset failed")
+                    print("Please try the manual method:")
+                    print("  docker exec -it gitlab gitlab-rails console -e production")
+                    print("  Then run the commands manually")
+                    
+            finally:
+                # Clean up temporary file
+                try:
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+                    
+        except Exception as e:
+            DisplayUtils.print_error(f"Error during GitLab password reset: {e}")
+                
+        input("Press Enter to continue...")
+            
 
-# Execute the password reset
-print_status "Executing password reset..."
-if docker exec -i gitlab gitlab-rails console -e production < /tmp/gitlab_password_reset.rb; then
-    print_success "Password reset completed!"
-    echo ""
-    echo "You can now login to GitLab with:"
-    echo "  Username: root"
-    echo "  Password: (the password you just set)"
-    echo ""
-    echo "URL: http://gitlab.soject.com"
-else
-    print_error "Password reset failed"
-    echo "Please try the manual method:"
-    echo "  docker exec -it gitlab gitlab-rails console -e production"
-    echo "  Then run the commands manually"
-fi
-
-# Clean up temporary file
-rm -f /tmp/gitlab_password_reset.rb
-
-print_success "Script completed!"
-'''
-        
-        script_path = gitlab_path / "quick_reset_password.sh"
-        with open(script_path, 'w') as f:
-            f.write(script_content)
-        
-        DisplayUtils.print_success(f"Created GitLab quick reset script: {script_path}")
             
     # Placeholder methods for other menu actions
     def _install_dependencies(self, server_assistant):
