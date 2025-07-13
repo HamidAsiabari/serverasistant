@@ -133,6 +133,7 @@ Examples:
             menu_system.create_main_menu(server_assistant)
             menu_system.create_service_management_menu(server_assistant)
             menu_system.create_setup_menu(server_assistant)
+            menu_system.create_certificate_management_menu(server_assistant)
             menu_system.create_testing_menu(server_assistant)
             
             # Start main menu

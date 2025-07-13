@@ -119,6 +119,68 @@ chmod +x scripts/startup/start.sh
 - `install_requirements.sh` - Install dependencies
 - `setup_nginx.sh` - Nginx setup
 
+### Certificate Management
+- `certificate_manager.sh` - Comprehensive SSL certificate management for GitLab
+
+## Certificate Management
+
+### GitLab SSL Certificate Manager
+
+The `certificate_manager.sh` script provides comprehensive SSL certificate management for `gitlab.soject.com` using Let's Encrypt.
+
+#### Quick Start
+
+```bash
+# Make script executable
+chmod +x scripts/certificate_manager.sh
+
+# Run complete SSL setup (recommended for first-time setup)
+./scripts/certificate_manager.sh complete-setup
+```
+
+#### Available Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `install-certbot` | Install certbot for SSL certificate management | `./scripts/certificate_manager.sh install-certbot` |
+| `check-requirements` | Check system requirements for SSL setup | `./scripts/certificate_manager.sh check-requirements` |
+| `generate-cert` | Generate SSL certificate for gitlab.soject.com | `./scripts/certificate_manager.sh generate-cert` |
+| `configure-https` | Configure nginx for HTTPS with HTTP to HTTPS redirect | `./scripts/certificate_manager.sh configure-https` |
+| `test-ssl` | Test SSL certificate and HTTPS configuration | `./scripts/certificate_manager.sh test-ssl` |
+| `renew-cert` | Renew existing SSL certificate for gitlab.soject.com | `./scripts/certificate_manager.sh renew-cert` |
+| `view-status` | View current certificate status and expiration | `./scripts/certificate_manager.sh view-status` |
+| `self-signed` | Generate self-signed certificate for development/testing | `./scripts/certificate_manager.sh self-signed` |
+| `auto-renewal` | Setup automatic certificate renewal | `./scripts/certificate_manager.sh auto-renewal` |
+| `complete-setup` | Run complete SSL setup (install, generate, configure) | `./scripts/certificate_manager.sh complete-setup` |
+
+**Note**: Certbot will be automatically installed if not present during certificate generation or renewal operations.
+
+#### Cross-Server Usage
+
+This script is designed to work across different Ubuntu servers:
+
+1. **Copy the script** to your target server
+2. **Make it executable**: `chmod +x certificate_manager.sh`
+3. **Update configuration** if needed (domain, email, paths)
+4. **Run the setup**: `./certificate_manager.sh complete-setup`
+
+#### Prerequisites
+
+- Ubuntu/Debian system (or compatible Linux distribution)
+- Docker and Docker Compose installed
+- Domain `gitlab.soject.com` pointing to your server IP
+- Ports 80 and 443 available
+- Nginx and GitLab containers running
+- **Note**: Certbot will be automatically installed if not present
+
+#### Integration with ServerAssistant Menu
+
+The certificate management functionality is also available through the ServerAssistant menu system:
+
+1. Start ServerAssistant: `python serverassistant.py`
+2. Navigate to: Setup & Installation → Certificate Management
+3. Choose from the available certificate management options
+
 ## Best Practices
 
 1. **Always check prerequisites** before running scripts

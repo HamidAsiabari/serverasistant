@@ -6,6 +6,7 @@ from typing import Dict, List, Callable, Any, Optional
 from .display_utils import DisplayUtils, LogPanel, SimpleLogDisplay, RealTimeLogPanel, BottomLogDisplay
 import threading
 import time
+import os
 from datetime import datetime
 from core.docker_manager import DockerManager
 from core.config_manager import ConfigManager
@@ -182,9 +183,57 @@ class MenuSystem:
                           lambda: self._generate_ssl_certificates(server_assistant),
                           "Generate SSL certificates")
                           
-        self.add_menu_item("setup", "5", "Complete System Setup",
+        self.add_menu_item("setup", "5", "Certificate Management",
+                          lambda: self.display_menu("certificate_management", "Certificate Management"),
+                          "Manage SSL certificates for domains")
+                          
+        self.add_menu_item("setup", "6", "Complete System Setup",
                           lambda: self._complete_system_setup(server_assistant),
                           "Run complete system setup")
+                          
+    def create_certificate_management_menu(self, server_assistant):
+        """Create certificate management menu"""
+        self.add_menu("certificate_management", "Certificate Management")
+        
+        self.add_menu_item("certificate_management", "1", "Install Certbot",
+                          lambda: self._install_certbot(server_assistant),
+                          "Install certbot for SSL certificate management")
+                          
+        self.add_menu_item("certificate_management", "2", "Generate GitLab SSL Certificate",
+                          lambda: self._generate_gitlab_ssl_certificate(server_assistant),
+                          "Generate SSL certificate for gitlab.soject.com using certbot")
+                          
+        self.add_menu_item("certificate_management", "3", "Configure GitLab HTTPS",
+                          lambda: self._configure_gitlab_https(server_assistant),
+                          "Configure nginx for HTTPS with HTTP to HTTPS redirect")
+                          
+        self.add_menu_item("certificate_management", "4", "Test GitLab SSL",
+                          lambda: self._test_gitlab_ssl(server_assistant),
+                          "Test SSL certificate and HTTPS configuration")
+                          
+        self.add_menu_item("certificate_management", "5", "Renew GitLab Certificate",
+                          lambda: self._renew_gitlab_certificate(server_assistant),
+                          "Renew existing SSL certificate for gitlab.soject.com")
+                          
+        self.add_menu_item("certificate_management", "6", "View Certificate Status",
+                          lambda: self._view_certificate_status(server_assistant),
+                          "View current certificate status and expiration")
+                          
+        self.add_menu_item("certificate_management", "7", "Generate Self-Signed Certificate",
+                          lambda: self._generate_self_signed_certificate(server_assistant),
+                          "Generate self-signed certificate for development/testing")
+                          
+        self.add_menu_item("certificate_management", "8", "Setup Auto-Renewal",
+                          lambda: self._setup_auto_renewal(server_assistant),
+                          "Setup automatic certificate renewal")
+                          
+        self.add_menu_item("certificate_management", "9", "Complete GitLab SSL Setup",
+                          lambda: self._complete_gitlab_ssl_setup(server_assistant),
+                          "Run complete SSL setup for GitLab (install, generate, configure)")
+                          
+        self.add_menu_item("certificate_management", "10", "Check System Requirements",
+                          lambda: self._check_ssl_requirements(server_assistant),
+                          "Check system requirements for SSL certificate setup")
                           
     def create_testing_menu(self, server_assistant):
         """Create testing menu"""
@@ -833,6 +882,550 @@ exit
     def _generate_ssl_certificates(self, server_assistant):
         DisplayUtils.print_info("Generating SSL certificates...")
         # Implementation would go here
+        
+    def _generate_gitlab_ssl_certificate(self, server_assistant):
+        """Generate SSL certificate for gitlab.soject.com using certbot"""
+        DisplayUtils.print_info("🔐 Generating SSL certificate for gitlab.soject.com...")
+        
+        try:
+            # Check if certbot is available and install if needed
+            import subprocess
+            result = subprocess.run(['certbot', '--version'], capture_output=True, text=True)
+            if result.returncode != 0:
+                DisplayUtils.print_warning("⚠️  Certbot is not installed. Installing certbot first...")
+                if not self._install_certbot(server_assistant):
+                    DisplayUtils.print_error("❌ Failed to install certbot. Cannot proceed with certificate generation.")
+                    return
+                DisplayUtils.print_success("✅ Certbot installed successfully!")
+            
+            # Check if nginx is running
+            if not server_assistant.get_service_status("nginx"):
+                DisplayUtils.print_warning("⚠️  Nginx is not running. Starting nginx first...")
+                if not server_assistant.start_service("nginx"):
+                    DisplayUtils.print_error("❌ Failed to start nginx")
+                    return
+            
+            # Generate certificate using certbot
+            DisplayUtils.print_info("📝 Generating certificate with certbot...")
+            certbot_cmd = [
+                'certbot', 'certonly', '--webroot',
+                '-w', '/var/www/html',
+                '-d', 'gitlab.soject.com',
+                '--non-interactive',
+                '--agree-tos',
+                '--email', 'admin@soject.com'
+            ]
+            
+            result = subprocess.run(certbot_cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                DisplayUtils.print_success("✅ SSL certificate generated successfully!")
+                DisplayUtils.print_info("📁 Certificate location: /etc/letsencrypt/live/gitlab.soject.com/")
+                
+                # Copy certificates to nginx ssl directory
+                self._copy_certificates_to_nginx(server_assistant)
+                
+            else:
+                DisplayUtils.print_error(f"❌ Failed to generate certificate: {result.stderr}")
+                
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error generating certificate: {e}")
+    
+    def _configure_gitlab_https(self, server_assistant):
+        """Configure nginx for HTTPS with HTTP to HTTPS redirect"""
+        DisplayUtils.print_info("🔧 Configuring nginx for GitLab HTTPS...")
+        
+        try:
+            nginx_conf_path = "docker_services/nginx/conf.d/gitlab.soject.com.conf"
+            
+            # Create HTTPS configuration
+            https_config = '''server {
+    listen 80;
+    server_name gitlab.soject.com;
+    
+    # Redirect all HTTP traffic to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name gitlab.soject.com;
+    
+    # SSL Configuration
+    ssl_certificate /etc/nginx/ssl/gitlab.soject.com.crt;
+    ssl_certificate_key /etc/nginx/ssl/gitlab.soject.com.key;
+    
+    # SSL Security Settings
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options DENY always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    
+    location / {
+        proxy_pass http://gitlab:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # GitLab specific headers
+        proxy_set_header X-GitLab-Event $http_x_gitlab_event;
+        proxy_set_header X-GitLab-Token $http_x_gitlab_token;
+        
+        # Large file uploads for GitLab
+        client_max_body_size 500M;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+}'''
+            
+            # Write configuration
+            with open(nginx_conf_path, 'w') as f:
+                f.write(https_config)
+            
+            DisplayUtils.print_success("✅ HTTPS configuration created successfully!")
+            
+            # Reload nginx
+            DisplayUtils.print_info("🔄 Reloading nginx configuration...")
+            if server_assistant.restart_service("nginx"):
+                DisplayUtils.print_success("✅ Nginx reloaded successfully!")
+            else:
+                DisplayUtils.print_warning("⚠️  Failed to reload nginx. Please restart manually.")
+                
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error configuring HTTPS: {e}")
+    
+    def _test_gitlab_ssl(self, server_assistant):
+        """Test SSL certificate and HTTPS configuration"""
+        DisplayUtils.print_info("🧪 Testing GitLab SSL configuration...")
+        
+        try:
+            import subprocess
+            import requests
+            
+            # Test HTTPS connection
+            DisplayUtils.print_info("🔍 Testing HTTPS connection...")
+            try:
+                response = requests.get('https://gitlab.soject.com', timeout=10, verify=False)
+                if response.status_code == 200:
+                    DisplayUtils.print_success("✅ HTTPS connection successful!")
+                else:
+                    DisplayUtils.print_warning(f"⚠️  HTTPS connection returned status {response.status_code}")
+            except Exception as e:
+                DisplayUtils.print_error(f"❌ HTTPS connection failed: {e}")
+            
+            # Test certificate
+            DisplayUtils.print_info("🔍 Testing SSL certificate...")
+            cert_cmd = ['openssl', 's_client', '-connect', 'gitlab.soject.com:443', '-servername', 'gitlab.soject.com']
+            result = subprocess.run(cert_cmd, capture_output=True, text=True, input='\n', timeout=10)
+            
+            if result.returncode == 0:
+                DisplayUtils.print_success("✅ SSL certificate test successful!")
+            else:
+                DisplayUtils.print_warning("⚠️  SSL certificate test failed")
+                
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error testing SSL: {e}")
+    
+    def _renew_gitlab_certificate(self, server_assistant):
+        """Renew existing SSL certificate for gitlab.soject.com"""
+        DisplayUtils.print_info("🔄 Renewing GitLab SSL certificate...")
+        
+        try:
+            import subprocess
+            
+            # Check if certbot is available and install if needed
+            result = subprocess.run(['certbot', '--version'], capture_output=True, text=True)
+            if result.returncode != 0:
+                DisplayUtils.print_warning("⚠️  Certbot is not installed. Installing certbot first...")
+                if not self._install_certbot(server_assistant):
+                    DisplayUtils.print_error("❌ Failed to install certbot. Cannot proceed with certificate renewal.")
+                    return
+                DisplayUtils.print_success("✅ Certbot installed successfully!")
+            
+            # Renew certificate
+            renew_cmd = ['certbot', 'renew', '--cert-name', 'gitlab.soject.com', '--quiet']
+            result = subprocess.run(renew_cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                DisplayUtils.print_success("✅ Certificate renewed successfully!")
+                
+                # Copy renewed certificates
+                self._copy_certificates_to_nginx(server_assistant)
+                
+                # Reload nginx
+                if server_assistant.restart_service("nginx"):
+                    DisplayUtils.print_success("✅ Nginx reloaded with renewed certificate!")
+                else:
+                    DisplayUtils.print_warning("⚠️  Failed to reload nginx. Please restart manually.")
+            else:
+                DisplayUtils.print_error(f"❌ Failed to renew certificate: {result.stderr}")
+                
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error renewing certificate: {e}")
+    
+    def _view_certificate_status(self, server_assistant):
+        """View current certificate status and expiration"""
+        DisplayUtils.print_info("📋 Checking certificate status...")
+        
+        try:
+            import subprocess
+            from datetime import datetime
+            
+            # Check certificate expiration
+            cert_path = "/etc/letsencrypt/live/gitlab.soject.com/fullchain.pem"
+            if not os.path.exists(cert_path):
+                DisplayUtils.print_warning("⚠️  Certificate not found. Generate one first.")
+                return
+            
+            # Get certificate info
+            cert_cmd = ['openssl', 'x509', '-in', cert_path, '-text', '-noout']
+            result = subprocess.run(cert_cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                # Parse certificate info
+                cert_info = result.stdout
+                
+                # Extract expiration date
+                import re
+                not_after_match = re.search(r'Not After\s*:\s*(.+)', cert_info)
+                if not_after_match:
+                    expiry_date = not_after_match.group(1).strip()
+                    DisplayUtils.print_info(f"📅 Certificate expires: {expiry_date}")
+                
+                # Extract issuer
+                issuer_match = re.search(r'Issuer\s*:\s*(.+)', cert_info)
+                if issuer_match:
+                    issuer = issuer_match.group(1).strip()
+                    DisplayUtils.print_info(f"🏢 Issuer: {issuer}")
+                
+                DisplayUtils.print_success("✅ Certificate is valid")
+                
+            else:
+                DisplayUtils.print_error("❌ Failed to read certificate")
+                
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error checking certificate status: {e}")
+    
+    def _generate_self_signed_certificate(self, server_assistant):
+        """Generate self-signed certificate for development/testing"""
+        DisplayUtils.print_info("🔐 Generating self-signed certificate for gitlab.soject.com...")
+        
+        try:
+            import subprocess
+            
+            # Create ssl directory
+            ssl_dir = "docker_services/nginx/ssl"
+            os.makedirs(ssl_dir, exist_ok=True)
+            
+            # Generate self-signed certificate
+            cert_cmd = [
+                'openssl', 'req', '-x509', '-nodes', '-days', '365', '-newkey', 'rsa:2048',
+                '-keyout', f'{ssl_dir}/gitlab.soject.com.key',
+                '-out', f'{ssl_dir}/gitlab.soject.com.crt',
+                '-subj', '/C=US/ST=State/L=City/O=Organization/CN=gitlab.soject.com'
+            ]
+            
+            result = subprocess.run(cert_cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                # Set proper permissions
+                subprocess.run(['chmod', '644', f'{ssl_dir}/gitlab.soject.com.crt'])
+                subprocess.run(['chmod', '600', f'{ssl_dir}/gitlab.soject.com.key'])
+                
+                DisplayUtils.print_success("✅ Self-signed certificate generated successfully!")
+                DisplayUtils.print_info(f"📁 Certificate files: {ssl_dir}/")
+                
+                # Configure HTTPS
+                self._configure_gitlab_https(server_assistant)
+                
+            else:
+                DisplayUtils.print_error(f"❌ Failed to generate certificate: {result.stderr}")
+                
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error generating self-signed certificate: {e}")
+    
+    def _copy_certificates_to_nginx(self, server_assistant):
+        """Copy Let's Encrypt certificates to nginx ssl directory"""
+        DisplayUtils.print_info("📁 Copying certificates to nginx ssl directory...")
+        
+        try:
+            import subprocess
+            import shutil
+            
+            # Create nginx ssl directory
+            nginx_ssl_dir = "docker_services/nginx/ssl"
+            os.makedirs(nginx_ssl_dir, exist_ok=True)
+            
+            # Copy certificates
+            cert_src = "/etc/letsencrypt/live/gitlab.soject.com/fullchain.pem"
+            key_src = "/etc/letsencrypt/live/gitlab.soject.com/privkey.pem"
+            
+            cert_dst = f"{nginx_ssl_dir}/gitlab.soject.com.crt"
+            key_dst = f"{nginx_ssl_dir}/gitlab.soject.com.key"
+            
+            # Copy with sudo if needed
+            subprocess.run(['sudo', 'cp', cert_src, cert_dst])
+            subprocess.run(['sudo', 'cp', key_src, key_dst])
+            
+            # Set proper permissions
+            subprocess.run(['sudo', 'chmod', '644', cert_dst])
+            subprocess.run(['sudo', 'chmod', '600', key_dst])
+            
+            DisplayUtils.print_success("✅ Certificates copied successfully!")
+            
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error copying certificates: {e}")
+    
+    def _install_certbot(self, server_assistant):
+        """Install certbot for SSL certificate management"""
+        DisplayUtils.print_info("🔧 Installing certbot...")
+        
+        try:
+            import subprocess
+            import platform
+            
+            # Detect OS
+            system = platform.system().lower()
+            
+            if system == "linux":
+                # Check if it's Ubuntu/Debian
+                if os.path.exists("/etc/debian_version"):
+                    DisplayUtils.print_info("📦 Detected Ubuntu/Debian system")
+                    subprocess.run(['sudo', 'apt', 'update'], check=True)
+                    subprocess.run(['sudo', 'apt', 'install', '-y', 'certbot'], check=True)
+                elif os.path.exists("/etc/redhat-release"):
+                    DisplayUtils.print_info("📦 Detected CentOS/RHEL system")
+                    subprocess.run(['sudo', 'yum', 'install', '-y', 'certbot'], check=True)
+                elif os.path.exists("/etc/arch-release"):
+                    DisplayUtils.print_info("📦 Detected Arch Linux system")
+                    subprocess.run(['sudo', 'pacman', '-S', '--noconfirm', 'certbot'], check=True)
+                else:
+                    DisplayUtils.print_error("❌ Unsupported Linux distribution")
+                    DisplayUtils.print_info("Please install certbot manually:")
+                    DisplayUtils.print_info("  Ubuntu/Debian: sudo apt install certbot")
+                    DisplayUtils.print_info("  CentOS/RHEL: sudo yum install certbot")
+                    DisplayUtils.print_info("  Arch Linux: sudo pacman -S certbot")
+                    return False
+            else:
+                DisplayUtils.print_error("❌ Unsupported operating system")
+                return False
+            
+            # Verify installation
+            result = subprocess.run(['certbot', '--version'], capture_output=True, text=True)
+            if result.returncode == 0:
+                DisplayUtils.print_success("✅ Certbot installed successfully!")
+                DisplayUtils.print_info(f"Version: {result.stdout.strip()}")
+                return True
+            else:
+                DisplayUtils.print_error("❌ Failed to verify certbot installation")
+                return False
+                
+        except subprocess.CalledProcessError as e:
+            DisplayUtils.print_error(f"❌ Failed to install certbot: {e}")
+            return False
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error installing certbot: {e}")
+            return False
+    
+    def _setup_auto_renewal(self, server_assistant):
+        """Setup automatic certificate renewal"""
+        DisplayUtils.print_info("🔄 Setting up certificate auto-renewal...")
+        
+        try:
+            import subprocess
+            
+            # Create renewal script
+            renewal_script = '''#!/bin/bash
+# GitLab certificate renewal script
+
+cd "$(dirname "$0")/docker_services/nginx"
+
+# Stop nginx
+docker-compose stop nginx
+
+# Renew certificate
+certbot renew --cert-name gitlab.soject.com --quiet
+
+# Copy renewed certificates
+sudo cp /etc/letsencrypt/live/gitlab.soject.com/fullchain.pem ssl/gitlab.soject.com.crt
+sudo cp /etc/letsencrypt/live/gitlab.soject.com/privkey.pem ssl/gitlab.soject.com.key
+
+# Set permissions
+sudo chmod 644 ssl/gitlab.soject.com.crt
+sudo chmod 600 ssl/gitlab.soject.com.key
+
+# Start nginx
+docker-compose start nginx
+
+echo "$(date): GitLab certificate renewed" >> /var/log/gitlab-cert-renewal.log
+'''
+            
+            # Write renewal script
+            script_path = "scripts/renew_gitlab_cert.sh"
+            os.makedirs("scripts", exist_ok=True)
+            
+            with open(script_path, 'w') as f:
+                f.write(renewal_script)
+            
+            # Make script executable
+            subprocess.run(['chmod', '+x', script_path])
+            
+            # Add to crontab (run twice daily)
+            cron_job = f"0 2,14 * * * {os.path.abspath(script_path)}"
+            
+            # Check if cron job already exists
+            result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+            if result.returncode == 0 and script_path not in result.stdout:
+                # Add new cron job
+                (result.stdout + cron_job + '\n') | subprocess.run(['crontab', '-'], input=True, text=True)
+                DisplayUtils.print_success("✅ Auto-renewal cron job added")
+            else:
+                DisplayUtils.print_warning("⚠️  Auto-renewal cron job already exists")
+            
+            DisplayUtils.print_success("✅ Auto-renewal setup complete!")
+            DisplayUtils.print_info(f"📁 Renewal script: {script_path}")
+            DisplayUtils.print_info("⏰ Will run twice daily at 2:00 AM and 2:00 PM")
+            
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error setting up auto-renewal: {e}")
+    
+    def _complete_gitlab_ssl_setup(self, server_assistant):
+        """Run complete SSL setup for GitLab (install, generate, configure)"""
+        DisplayUtils.print_info("🚀 Running complete GitLab SSL setup...")
+        
+        try:
+            # Step 1: Install certbot
+            DisplayUtils.print_info("📋 Step 1/6: Installing certbot...")
+            if not self._install_certbot(server_assistant):
+                DisplayUtils.print_error("❌ Failed to install certbot. Cannot proceed with SSL setup.")
+                return
+            
+            # Step 2: Check requirements
+            DisplayUtils.print_info("📋 Step 2/6: Checking system requirements...")
+            self._check_ssl_requirements(server_assistant)
+            
+            # Step 3: Start nginx if needed
+            DisplayUtils.print_info("📋 Step 3/6: Ensuring nginx is running...")
+            if not server_assistant.get_service_status("nginx"):
+                DisplayUtils.print_info("Starting nginx...")
+                if not server_assistant.start_service("nginx"):
+                    DisplayUtils.print_error("❌ Failed to start nginx. Cannot proceed.")
+                    return
+            
+            # Step 4: Generate certificate
+            DisplayUtils.print_info("📋 Step 4/6: Generating SSL certificate...")
+            self._generate_gitlab_ssl_certificate(server_assistant)
+            
+            # Step 5: Configure HTTPS
+            DisplayUtils.print_info("📋 Step 5/6: Configuring HTTPS...")
+            self._configure_gitlab_https(server_assistant)
+            
+            # Step 6: Setup auto-renewal
+            DisplayUtils.print_info("📋 Step 6/6: Setting up auto-renewal...")
+            self._setup_auto_renewal(server_assistant)
+            
+            DisplayUtils.print_success("🎉 Complete GitLab SSL setup finished!")
+            DisplayUtils.print_info("🔗 Access GitLab at: https://gitlab.soject.com")
+            
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error during complete SSL setup: {e}")
+    
+    def _check_ssl_requirements(self, server_assistant):
+        """Check system requirements for SSL certificate setup"""
+        DisplayUtils.print_info("🔍 Checking system requirements for SSL setup...")
+        
+        try:
+            import subprocess
+            import platform
+            
+            requirements_met = True
+            
+            # Check if running as root
+            if os.geteuid() == 0:
+                DisplayUtils.print_warning("⚠️  Running as root (not recommended)")
+            else:
+                DisplayUtils.print_success("✅ Not running as root")
+            
+            # Check if domain resolves
+            DisplayUtils.print_info("🔍 Checking if gitlab.soject.com resolves...")
+            try:
+                result = subprocess.run(['nslookup', 'gitlab.soject.com'], capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    DisplayUtils.print_success("✅ Domain gitlab.soject.com resolves")
+                else:
+                    DisplayUtils.print_warning("⚠️  Domain gitlab.soject.com does not resolve")
+                    requirements_met = False
+            except Exception as e:
+                DisplayUtils.print_warning(f"⚠️  Could not check domain resolution: {e}")
+                requirements_met = False
+            
+            # Check if port 80 is available
+            DisplayUtils.print_info("🔍 Checking if port 80 is available...")
+            try:
+                result = subprocess.run(['netstat', '-tlnp'], capture_output=True, text=True)
+                if ':80 ' in result.stdout:
+                    DisplayUtils.print_warning("⚠️  Port 80 is in use")
+                    requirements_met = False
+                else:
+                    DisplayUtils.print_success("✅ Port 80 is available")
+            except Exception as e:
+                DisplayUtils.print_warning(f"⚠️  Could not check port 80: {e}")
+            
+            # Check if port 443 is available
+            DisplayUtils.print_info("🔍 Checking if port 443 is available...")
+            try:
+                result = subprocess.run(['netstat', '-tlnp'], capture_output=True, text=True)
+                if ':443 ' in result.stdout:
+                    DisplayUtils.print_warning("⚠️  Port 443 is in use")
+                else:
+                    DisplayUtils.print_success("✅ Port 443 is available")
+            except Exception as e:
+                DisplayUtils.print_warning(f"⚠️  Could not check port 443: {e}")
+            
+            # Check if nginx is running
+            nginx_status = server_assistant.get_service_status("nginx")
+            if nginx_status and nginx_status.status == "running":
+                DisplayUtils.print_success("✅ Nginx is running")
+            else:
+                DisplayUtils.print_warning("⚠️  Nginx is not running")
+            
+            # Check if gitlab is running
+            gitlab_status = server_assistant.get_service_status("gitlab")
+            if gitlab_status and gitlab_status.status == "running":
+                DisplayUtils.print_success("✅ GitLab is running")
+            else:
+                DisplayUtils.print_warning("⚠️  GitLab is not running")
+            
+            # Check if certbot is installed
+            try:
+                result = subprocess.run(['certbot', '--version'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    DisplayUtils.print_success("✅ Certbot is installed")
+                else:
+                    DisplayUtils.print_warning("⚠️  Certbot is not installed")
+                    requirements_met = False
+            except Exception:
+                DisplayUtils.print_warning("⚠️  Certbot is not installed")
+                requirements_met = False
+            
+            # Summary
+            if requirements_met:
+                DisplayUtils.print_success("✅ All requirements met for SSL setup")
+            else:
+                DisplayUtils.print_warning("⚠️  Some requirements not met. SSL setup may fail.")
+                DisplayUtils.print_info("Please address the warnings above before proceeding.")
+            
+        except Exception as e:
+            DisplayUtils.print_error(f"❌ Error checking requirements: {e}")
         
     def _complete_system_setup(self, server_assistant):
         DisplayUtils.print_info("Running complete system setup...")
